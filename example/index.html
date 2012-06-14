@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Slide Mapper Demo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Demo of SlideMapper functionality">
+    <meta name="author" content="cavis">
+
+    <!-- styles -->
+    <link href="lib/leaflet/leaflet.css" rel="stylesheet">
+    <link href="slidemapper.css" rel="stylesheet">
+  </head>
+
+  <body>
+
+    <!-- mapper container -->
+    <div id="mapper" style="width: 800px"></div>
+
+    <!-- javascripts -->
+    <script src="lib/jquery-1.7.2.min.js"></script>
+    <script src="lib/leaflet/leaflet-src.js"></script>
+    <script src="lib/leafclusterer.js"></script>
+    <script src="slidemapper.js"></script>
+
+    <!-- sample data -->
+    <script src="example.js"></script>
+
+    <!-- initialize slide mapper -->
+    <script type="text/javascript">
+        var mapper = $('#mapper').slideMapper({
+            mapType: 'cloudmade',
+            apiKey:  '<API KEY HERE>',
+            slides: [EXAMPLEDATA[0], EXAMPLEDATA[1]]
+        });
+
+        // sample data
+        mapper.slideMapper('add', EXAMPLEDATA[2][0], EXAMPLEDATA[2][1], EXAMPLEDATA[2][2]);
+        mapper.slideMapper('add', EXAMPLEDATA[3][0], EXAMPLEDATA[3][1], EXAMPLEDATA[3][2]);
+        mapper.slideMapper('add', EXAMPLEDATA[4][0], EXAMPLEDATA[4][1], EXAMPLEDATA[4][2]);
+        mapper.slideMapper('add', EXAMPLEDATA[5][0], EXAMPLEDATA[5][1], EXAMPLEDATA[5][2]);
+        mapper.slideMapper('add', [EXAMPLEDATA[6], EXAMPLEDATA[7], EXAMPLEDATA[8], EXAMPLEDATA[9]]);
+    </script>
+
+  </body>
+</html>
+
+
+
