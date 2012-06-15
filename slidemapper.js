@@ -2,7 +2,7 @@
  * slidemapper.js v0.0.1
  * http://github.com/cavis/slidemapper
  * ==========================================================
- * Copyright (c) 2012 American Public Media, Ryan Cavis
+ * Copyright (c) 2012 Ryan Cavis
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ L.Control.Constrainer = L.Control.extend({
         container = L.DomUtil.create('div', className);
 
     var link   = L.DomUtil.create('a', className + '-selection', container);
+    var dashes = L.DomUtil.create('div', null, link);
     link.href  = '#';
     link.title = 'Constrain Selection';
 
@@ -142,7 +143,7 @@ L.Control.Cluster = L.Control.extend({
     START: L.Browser.touch ? 'touchstart' : 'mousedown',
     END: L.Browser.touch ? 'touchend' : 'mouseup',
     MOVE: L.Browser.touch ? 'touchmove' : 'mousemove',
-    MIN: 20,
+    MIN: 0,
     MAX: 120,
     STEP: 10,
     DEFAULT: 60
@@ -154,26 +155,28 @@ L.Control.Cluster = L.Control.extend({
 
     this._slider = L.DomUtil.create('div', className + '-slider', container);
     this._range  = L.DomUtil.create('div', className + '-slider-range', this._slider);
-    this._link   = L.DomUtil.create('a', className + '-slider-handle', this._slider);
-    this._link.href  = '#';
-    this._link.title = 'Clustering Size';
+    this._handle = L.DomUtil.create('span', className + '-slider-handle', this._slider);
+    this._handle.title = 'Clustering Size';
 
     this._range.style.height = '0%';
-    this._link.style.bottom = '0%';
-    this._link.innerHTML = 'off';
+    this._handle.style.bottom = '0%';
+    this._handle.innerHTML = 'off';
 
     // listen to dragging on the link
     L.DomEvent
-      .addListener(this._link, 'click', L.DomEvent.stopPropagation)
-      .addListener(this._link, 'click', L.DomEvent.preventDefault)
-      .addListener(this._link, L.Control.Cluster.MOVE, L.DomEvent.preventDefault)
-      .addListener(this._link, L.Control.Cluster.MOVE, L.DomEvent.preventDefault)
+      .addListener(this._handle, 'click', L.DomEvent.stopPropagation)
+      .addListener(this._handle, 'click', L.DomEvent.preventDefault)
+      // .addListener(this._handle, L.Control.Cluster.START, L.DomEvent.stopPropagation)
+      .addListener(this._handle, L.Control.Cluster.START, L.DomEvent.preventDefault)
+      .addListener(this._handle, L.Control.Cluster.MOVE, L.DomEvent.stopPropagation)
+      .addListener(this._handle, L.Control.Cluster.MOVE, L.DomEvent.preventDefault)
       .addListener(this._slider, L.Draggable.START, this._onStartDrag, this);
     return container;
   },
 
   _onStartDrag: function(e) {
     this._map.dragging._draggable.disable();
+    this._setMovingCursor();
     L.DomEvent
       .addListener(document, L.Control.Cluster.MOVE, L.DomEvent.stopPropagation)
       .addListener(document, L.Control.Cluster.MOVE, L.DomEvent.preventDefault)
@@ -181,20 +184,46 @@ L.Control.Cluster = L.Control.extend({
     L.DomEvent.addListener(document, L.Control.Cluster.END, this._onEndDrag, this);
 
     var height = parseInt(L.DomUtil.getStyle(this._slider, 'height').replace('px', ''));
-    console.log("het", height);
+    var top    = L.DomUtil.getViewportOffset(this._slider).y;
+    var bot    = top + height;
+    var half   = (.5 * (L.Control.Cluster.STEP / (L.Control.Cluster.MAX - L.Control.Cluster.MIN))) * height;
+
+    this._steps = [];
+    for (var i=L.Control.Cluster.MIN; i<=L.Control.Cluster.MAX; i+=L.Control.Cluster.STEP) {
+      var half = .5 * (L.Control.Cluster.STEP / (L.Control.Cluster.MAX - L.Control.Cluster.MIN));
+      var perc = i / (L.Control.Cluster.MAX - L.Control.Cluster.MIN);
+      this._steps.push({y: bot - (height * perc) - half, val: i, perc: perc});
+    }
   },
 
   _onDrag: function(e) {
+    var step = this._steps[this._steps.length - 1];
+    for (var i=0; i<this._steps.length; i++) {
+      if (e.pageY >= this._steps[i].y) {
+        step = this._steps[i];
+        break;
+      }
+    }
 
-
-    console.log("DRAG", e.pageY, L.DomUtil.getViewportOffset(this._slider).y, L.DomUtil.getStyle(this._slider, 'height'));
-
+    var percStr = Math.round(100*step.perc) + '%';
+    this._range.style.height = percStr;
+    this._handle.style.bottom = percStr;
+    this._handle.innerHTML = (step.val == 0) ? 'off' : step.val;
   },
 
   _onEndDrag: function(e) {
     this._map.dragging._draggable.enable();
+    this._restoreCursor();
     L.DomEvent.removeListener(document, L.Control.Cluster.MOVE, this._onDrag);
     L.DomEvent.removeListener(document, L.Control.Cluster.END, this._onEndDrag);
+  },
+
+  _setMovingCursor: function() {
+    document.body.className += ' smapp-slider-dragging';
+  },
+
+  _restoreCursor: function() {
+    document.body.className = document.body.className.replace(/ smapp-slider-dragging/g, '');
   },
 
 
