@@ -146,34 +146,47 @@ L.Control.Cluster = L.Control.extend({
     MIN: 0,
     MAX: 120,
     STEP: 10,
-    DEFAULT: 60
+    DEFAULT: 80
   },
 
   onAdd: function (map) {
     var className = 'smapp-control-cluster',
         container = L.DomUtil.create('div', className);
-
-    this._slider = L.DomUtil.create('div', className + '-slider', container);
-    this._range  = L.DomUtil.create('div', className + '-slider-range', this._slider);
-    this._handle = L.DomUtil.create('span', className + '-slider-handle', this._slider);
+    this._slider   = L.DomUtil.create('div', className + '-slider', container);
+    this._range    = L.DomUtil.create('div', className + '-slider-range', this._slider);
+    this._handleCt = L.DomUtil.create('div', className + '-slider-handle-ct', this._slider);
+    this._handle   = L.DomUtil.create('span', className + '-slider-handle', this._handleCt);
     this._handle.title = 'Clustering Size';
 
-    this._range.style.height = '0%';
-    this._handle.style.bottom = '0%';
-    this._handle.innerHTML = 'off';
+    // initial size
+    var initialStep = this._valToStep(L.Control.Cluster.DEFAULT);
+    this._setStep(initialStep);
 
-    // listen to dragging on the link
+    // listen to dragging on the handle
     L.DomEvent
       .addListener(this._handle, 'click', L.DomEvent.stopPropagation)
       .addListener(this._handle, 'click', L.DomEvent.preventDefault)
-      // .addListener(this._handle, L.Control.Cluster.START, L.DomEvent.stopPropagation)
       .addListener(this._handle, L.Control.Cluster.START, L.DomEvent.preventDefault)
       .addListener(this._handle, L.Control.Cluster.MOVE, L.DomEvent.stopPropagation)
       .addListener(this._handle, L.Control.Cluster.MOVE, L.DomEvent.preventDefault)
-      .addListener(this._slider, L.Draggable.START, this._onStartDrag, this);
+      .addListener(this._handle, L.Draggable.START, this._onStartDrag, this);
+
+    // listen to clicking on the range
+    L.DomEvent
+      .addListener(this._slider, 'click', L.DomEvent.stopPropagation)
+      .addListener(this._slider, 'click', L.DomEvent.preventDefault)
+      .addListener(this._slider, 'click', this._onClick, this);
     return container;
   },
 
+  // slider click handler
+  _onClick: function(e) {
+    var step = this._yCoordToStep(e.pageY);
+    this._setStep(step);
+    this._onEndDrag();
+  },
+
+  // mouse down handler
   _onStartDrag: function(e) {
     this._map.dragging._draggable.disable();
     this._setMovingCursor();
@@ -182,35 +195,15 @@ L.Control.Cluster = L.Control.extend({
       .addListener(document, L.Control.Cluster.MOVE, L.DomEvent.preventDefault)
       .addListener(document, L.Control.Cluster.MOVE, this._onDrag, this);
     L.DomEvent.addListener(document, L.Control.Cluster.END, this._onEndDrag, this);
-
-    var height = parseInt(L.DomUtil.getStyle(this._slider, 'height').replace('px', ''));
-    var top    = L.DomUtil.getViewportOffset(this._slider).y;
-    var bot    = top + height;
-    var half   = (.5 * (L.Control.Cluster.STEP / (L.Control.Cluster.MAX - L.Control.Cluster.MIN))) * height;
-
-    this._steps = [];
-    for (var i=L.Control.Cluster.MIN; i<=L.Control.Cluster.MAX; i+=L.Control.Cluster.STEP) {
-      var half = .5 * (L.Control.Cluster.STEP / (L.Control.Cluster.MAX - L.Control.Cluster.MIN));
-      var perc = i / (L.Control.Cluster.MAX - L.Control.Cluster.MIN);
-      this._steps.push({y: bot - (height * perc) - half, val: i, perc: perc});
-    }
   },
 
+  // mouse moving handler
   _onDrag: function(e) {
-    var step = this._steps[this._steps.length - 1];
-    for (var i=0; i<this._steps.length; i++) {
-      if (e.pageY >= this._steps[i].y) {
-        step = this._steps[i];
-        break;
-      }
-    }
-
-    var percStr = Math.round(100*step.perc) + '%';
-    this._range.style.height = percStr;
-    this._handle.style.bottom = percStr;
-    this._handle.innerHTML = (step.val == 0) ? 'off' : step.val;
+    var step = this._yCoordToStep(e.pageY);
+    this._setStep(step);
   },
 
+  // mouse up handler
   _onEndDrag: function(e) {
     this._map.dragging._draggable.enable();
     this._restoreCursor();
@@ -218,16 +211,59 @@ L.Control.Cluster = L.Control.extend({
     L.DomEvent.removeListener(document, L.Control.Cluster.END, this._onEndDrag);
   },
 
+  // initialize slider steps
+  _initSteps: function() {
+    var height = parseInt(L.DomUtil.getStyle(this._slider, 'height').replace('px', ''));
+    var top    = L.DomUtil.getViewportOffset(this._slider).y;
+    var bot    = top + height;
+    var half   = (.5 * (L.Control.Cluster.STEP / (L.Control.Cluster.MAX - L.Control.Cluster.MIN))) * height;
+    this._steps = [];
+    for (var i=L.Control.Cluster.MIN; i<=L.Control.Cluster.MAX; i+=L.Control.Cluster.STEP) {
+      var perc = i / (L.Control.Cluster.MAX - L.Control.Cluster.MIN);
+      this._steps.push({y: bot - (height * perc) - half, val: i, perc: perc});
+    }
+  },
+
+  // transform a point to a step
+  _yCoordToStep: function(yCoord) {
+    if (!this._steps) this._initSteps();
+    for (var i=0; i<this._steps.length; i++) {
+      if (yCoord >= this._steps[i].y) return this._steps[i];
+    }
+    return this._steps[this._steps.length - 1];
+  },
+
+  // transform a value to a step number
+  _valToStep: function(val) {
+    if (!this._steps) this._initSteps();
+    for (var i=0; i<this._steps.length; i++) {
+      if (val <= this._steps[i].val) return this._steps[i];
+    }
+    return this._steps[this._steps.length - 1];
+  },
+
+  // helper to convert to percentage string
+  _stepToPercentage: function(step) {
+    return Math.round(100*step.perc) + '%';
+  },
+
+  // set the slider to a step
+  _setStep: function(step) {
+    this._range.style.height = this._stepToPercentage(step);
+    this._handle.style.bottom = this._stepToPercentage(step);
+    this._handle.style['font-weight'] = (step.val == 0) ? 'normal' : 'bold';
+    this._handle.innerHTML = (step.val == 0) ? 'off' : step.val;
+  },
+
+  // add global dragging cursor
   _setMovingCursor: function() {
     document.body.className += ' smapp-slider-dragging';
   },
 
+  // remove global dragging cursor
   _restoreCursor: function() {
     document.body.className = document.body.className.replace(/ smapp-slider-dragging/g, '');
-  },
-
-
-
+  }
 
 });
 
@@ -239,9 +275,6 @@ L.Map.addInitHook(function () {
     this.addControl(this.clusterControl);
   }
 });
-
-
-
 
 
 /* ==========================================================
