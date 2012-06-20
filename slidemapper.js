@@ -19,86 +19,99 @@
 
 
 /* ==========================================================
- * Constrainer control - allow limiting slides to a rectangular area
- * of the map.
+ * Constrainer control - allow limiting slides to a
+ * rectangular area of the map.
  * ========================================================== */
 L.Control.Constrainer = L.Control.extend({
   options: { position: 'topright' },
 
+  statics: {
+    START: L.Browser.touch ? 'touchstart' : 'mousedown',
+    END: L.Browser.touch ? 'touchend' : 'mouseup',
+    MOVE: L.Browser.touch ? 'touchmove' : 'mousemove'
+  },
+
   onAdd: function (map) {
-    map.drawing   = {};
     var className = 'smapp-control-constrain',
         container = L.DomUtil.create('div', className);
 
-    var link   = L.DomUtil.create('a', className + '-selection', container);
-    var dashes = L.DomUtil.create('div', null, link);
-    link.href  = '#';
-    link.title = 'Constrain Selection';
+    this._link   = L.DomUtil.create('a', className + '-selection', container);
+    this._dashes = L.DomUtil.create('div', className + '-selection-inner', this._link);
+    this._link.href  = '#';
+    this._link.title = 'Constrain Selection';
 
+    // toggle state when clicking on the
     L.DomEvent
-      .addListener(link, 'click', L.DomEvent.stopPropagation)
-      .addListener(link, 'click', L.DomEvent.preventDefault)
-      .addListener(link, 'click', function() {
-        L.DomUtil.hasClass(link, 'down')
-        ? L.DomUtil.removeClass(link, 'down') || this.endConstrain()
-        : L.DomUtil.addClass(link, 'down') || this.startConstrain();
-      }, this);
-
+      .addListener(this._link, 'click', L.DomEvent.stopPropagation)
+      .addListener(this._link, 'click', L.DomEvent.preventDefault)
+      .addListener(this._link, 'click', this._onClick, this);
     return container;
   },
 
-  startConstrain: function() {
-    this._map.dragging._draggable.disable();
-    if (this._map.drawing._drawable) {
-      this._map.drawing._drawable.enable();
-      this._map.drawing._startLatLng = false;
+  // toggle click handler
+  _onClick: function(e) {
+    if (L.DomUtil.hasClass(this._link, 'down')) {
+      L.DomUtil.removeClass(this._link, 'down');
+      this._onEndDraw();
+      if (this._rectangle) {
+        this._map.removeLayer(this._rectangle);
+        this._rectangle = false;
+      }
     }
     else {
-      this._map.drawing._drawable = new L.Drawable(this._map._mapPane, this._map._container);
-      this._map.drawing._drawable.enable();
-      this._map.drawing._drawable
-        .on('dragstart', this.onDrawStart, this)
-        .on('drag', this.onDraw, this)
-        .on('dragend', this.onDrawEnd, this);
+      L.DomUtil.addClass(this._link, 'down');
+      this._map.dragging._draggable.disable();
+      this._setDrawingCursor();
+      L.DomEvent.addListener(this._map._mapPane, L.Control.Constrainer.START, this._onStartDraw, this);
     }
   },
 
-  onDrawStart: function(args) {
-    this._map.drawing._startLatLng = this._map.mouseEventToLatLng(args.event);
+  // mouse down handler
+  _onStartDraw: function(e) {
+    this._origin = this._map.mouseEventToLatLng(e);
+    L.DomEvent
+      .addListener(document, L.Control.Constrainer.MOVE, L.DomEvent.stopPropagation)
+      .addListener(document, L.Control.Constrainer.MOVE, L.DomEvent.preventDefault)
+      .addListener(document, L.Control.Constrainer.MOVE, this._onDraw, this)
+      .addListener(document, L.Control.Constrainer.END, this._onEndDraw, this);
   },
 
-  onDraw: function(args) {
-    var latlng = this._map.mouseEventToLatLng(args.event);
-    var bounds = new L.LatLngBounds(this._map.drawing._startLatLng, latlng);
-    if (this._map.drawing._rectangle) {
-      this._map.drawing._rectangle.setBounds(bounds);
+  // mouse moving handler
+  _onDraw: function(e) {
+    var latlng = this._map.mouseEventToLatLng(e);
+    var bounds = new L.LatLngBounds(this._origin, latlng);
+    if (this._rectangle) {
+      this._rectangle.setBounds(bounds);
     }
     else {
-      this._map.drawing._rectangle = new L.Rectangle(bounds, {
+      this._rectangle = new L.Rectangle(bounds, {
         clickable: false,
         fillOpacity: .1,
         opacity: .2,
         weight: 3
       });
-      this._map.addLayer(this._map.drawing._rectangle);
+      this._map.addLayer(this._rectangle);
     }
   },
 
-  onDrawEnd: function(args) {
-    this._map.drawing._drawable.disable();
+  // mouse up handler
+  _onEndDraw: function(e) {
     this._map.dragging._draggable.enable();
+    this._restoreCursor();
+    L.DomEvent.removeListener(this._map._mapPane, L.Control.Constrainer.START, this._onStartDraw);
+    L.DomEvent.removeListener(document, L.Control.Constrainer.MOVE, this._onDraw);
+    L.DomEvent.removeListener(document, L.Control.Constrainer.END, this._onEndDraw);
   },
 
-  endConstrain: function() {
-    if (this._map.drawing._rectangle) {
-      this._map.removeLayer(this._map.drawing._rectangle);
-      this._map.drawing._rectangle = false;
-    }
-    if (!this._map.dragging._draggable._enabled) {
-      this._map.drawing._drawable.disable();
-      this._map.dragging._draggable.enable();
-    }
-  }
+  // add global drawing cursor
+  _setDrawingCursor: function() {
+    document.body.className += ' smapp-slider-dragging';
+  },
+
+  // remove global dragging cursor
+  _restoreCursor: function() {
+    document.body.className = document.body.className.replace(/ smapp-slider-dragging/g, '');
+  },
 
 });
 
@@ -109,26 +122,6 @@ L.Map.addInitHook(function () {
     this.constrainControl = new L.Control.Constrainer();
     this.addControl(this.constrainControl);
   }
-});
-
-// use extension of drawable interface to draw rectangle
-L.Drawable = L.Draggable.extend({
-
-  _onMove: function (e) {
-    if (e.touches && e.touches.length > 1) return;
-    L.DomEvent.preventDefault(e);
-    var first = (e.touches && e.touches.length === 1 ? e.touches[0] : e);
-
-    if (!this._moved) {
-      this.fire('dragstart', {event: e});
-      this._moved = true;
-    }
-    this._moving = true;
-
-    var newPoint = new L.Point(first.clientX, first.clientY);
-    this.fire('drag', {event: e});
-  }
-
 });
 
 
