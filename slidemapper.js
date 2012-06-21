@@ -115,9 +115,7 @@ L.Control.Constrainer = L.Control.extend({
 
 });
 
-L.Map.mergeOptions({constrainControl: true});
-
-L.Map.addInitHook(function () {
+L.Map.addInitHook(function() {
   if (this.options.constrainControl) {
     this.constrainControl = new L.Control.Constrainer();
     this.addControl(this.constrainControl);
@@ -154,6 +152,7 @@ L.Control.Cluster = L.Control.extend({
     // initial size
     var initialStep = this._valToStep(L.Control.Cluster.DEFAULT);
     this._setStep(initialStep);
+    this._steps = false; //get css-height on subsequent loads
 
     // listen to dragging on the handle
     L.DomEvent
@@ -260,9 +259,7 @@ L.Control.Cluster = L.Control.extend({
 
 });
 
-L.Map.mergeOptions({clusterControl: true});
-
-L.Map.addInitHook(function () {
+L.Map.addInitHook(function() {
   if (this.options.clusterControl) {
     this.clusterControl = new L.Control.Cluster();
     this.addControl(this.clusterControl);
@@ -271,7 +268,7 @@ L.Map.addInitHook(function () {
 
 
 /* ==========================================================
- *
+ * SlideMapper jquery extension
  *
  * ========================================================== */
 (function($) {
@@ -285,7 +282,7 @@ L.Map.addInitHook(function () {
     minZoom: 2,
     maxZoom: 10,
     slides: [],
-    cluster: true,
+    clusterControl: true,
     constrainControl: true,
     maxClusterZoom: 9
   };
@@ -313,10 +310,10 @@ L.Map.addInitHook(function () {
   var methods = {
 
     // initial setup
-    init: function(options) {
+    init: function(passedOpts) {
       if (!DATA) {
         DATA = {};
-        DATA.options = $.extend({}, defaultOptions, options);
+        DATA.options = $.extend({}, defaultOptions, passedOpts);
 
         // create the slideshow
         $THIS.append('<div class="smapp-slides"><div class="carousel"></div><span class="left control">‹</span><span class="right control">›</span></div><div class="smapp-map"></div>');
@@ -343,7 +340,7 @@ L.Map.addInitHook(function () {
         var center = new L.LatLng(DATA.options.center[0], DATA.options.center[1]);
 
         // initialize the map
-        DATA.map = new L.Map(mapEl);
+        DATA.map = new L.Map(mapEl, DATA.options);
         var tiles = new L.TileLayer(tileUrl, {
             attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://cloudmade.com">CloudMade</a>',
             minZoom: DATA.options.minZoom,
