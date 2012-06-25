@@ -5,7 +5,7 @@
  * @author Imre Deak, ported for Leaflet
  * @copyright (c) 2009 Xiaoxi Wu
  * @fileoverview
- * This javascript library creates and manages per-zoom-level 
+ * This javascript library creates and manages per-zoom-level
  * clusters for large amounts of markers (hundreds or thousands).
  * This library was inspired by the <a href="http://www.maptimize.com">
  * Maptimize</a> hosted clustering solution.
@@ -13,11 +13,11 @@
  * <b>How it works</b>:<br/>
  * The <code>LeafClusterer</code> will group markers into clusters according to
  * their distance from a cluster's center. When a marker is added,
- * the marker cluster will find a position in all the clusters, and 
+ * the marker cluster will find a position in all the clusters, and
  * if it fails to find one, it will create a new cluster with the marker.
  * The number of markers in a cluster will be displayed
  * on the cluster marker. When the map viewport changes,
- * <code>LeafClusterer</code> will destroy the clusters in the viewport 
+ * <code>LeafClusterer</code> will destroy the clusters in the viewport
  * and regroup them into new clusters.
  *
  */
@@ -62,7 +62,7 @@
  * @property {String} [url] Image url.
  * @property {Number} [height] Image height.
  * @property {Number} [height] Image width.
- * @property {Array of Number} [opt_anchor] Anchor for label text, like [24, 12]. 
+ * @property {Array of Number} [opt_anchor] Anchor for label text, like [24, 12].
  *    If not set, the text will align center and middle.
  * @property {String} [opt_textColor="black"] Text color.
  */
@@ -307,6 +307,22 @@ function LeafClusterer(map, opt_markers, opt_opts) {
   };
 
   /**
+   * Set grid size
+   * @private
+   */
+  this.setGridSize_ = function (size) {
+    oldSize = gridSize_;
+    gridSize_ = size;
+
+    // regroup everything
+    if (oldSize != size) {
+      var marks = this.getMarkers();
+      this.clearMarkers();
+      this.addMarkers(marks);
+    }
+  };
+
+  /**
    * Get total number of markers.
    * @return {Number}
    */
@@ -314,6 +330,23 @@ function LeafClusterer(map, opt_markers, opt_opts) {
     var result = 0;
     for (var i = 0; i < clusters_.length; ++i) {
       result += clusters_[i].getTotalMarkers();
+    }
+    return result;
+  };
+
+  /**
+   * Get all the markers on the map
+   */
+  this.getMarkers = function() {
+    var result = [];
+    for (var i = 0; i < clusters_.length; ++i) {
+      var marks = clusters_[i].getMarkers();
+      for (var j = 0; j < marks.length; ++j) {
+        result.push(marks[j].marker);
+      }
+    }
+    for (var i = 0; i < leftMarkers_.length; ++i) {
+      result.push(leftMarkers_[i]);
     }
     return result;
   };
@@ -329,7 +362,7 @@ function LeafClusterer(map, opt_markers, opt_opts) {
   /**
    * Collect all markers of clusters in viewport and regroup them.
    */
-  this.resetViewport = function () {
+  this.resetViewport = function (force) {
     var clusters = this.getClustersInViewport_();
     var tmpMarkers = [];
     var removed = 0;
@@ -341,7 +374,7 @@ function LeafClusterer(map, opt_markers, opt_opts) {
         continue;
       }
       var curZoom = map_.getZoom();
-      if (curZoom !== oldZoom) {
+      if (curZoom !== oldZoom || force) {
 
         // If the cluster zoom level changed then destroy the cluster
         // and collect its markers.
@@ -581,7 +614,7 @@ ClusterMarker_ = L.Class.extend({
   initialize: function(latLng_, count_, styles_, padding_) {
     this.reset({latLng:latLng_, count: count_, styles: styles_, padding: padding_});
   },
-               
+
   reset: function(opts) {
     if (!opts || typeof opts !== "object")
       return;
@@ -640,17 +673,17 @@ ClusterMarker_ = L.Class.extend({
       this.container_.addEventListener("click",
         function() {
           cluster.onClick_(cluster);
-        }, false); 
+        }, false);
     } else if (this.container_.attachEvent) {
       this.container_.attachEvent("onclick",
         function() {
           cluster.onClick_(cluster);
-        });     
-    }   
+        });
+    }
     map.on('viewreset', this.redraw, this);
     this.redraw();
   },
-    
+
   onClick_: function(cluster) {
     var padding = cluster.padding_;
     var map = cluster.map_;
@@ -727,7 +760,7 @@ ClusterMarker_ = L.Class.extend({
       mstyle += 'width:' + this.width_ + 'px;text-align:center;';
     }
     var txtColor = this.textColor_ ? this.textColor_ : 'black';
-  
+
     div.style.cssText = mstyle + 'cursor:pointer;top:' + pos.y + "px;left:" +
         pos.x + "px;color:" + txtColor +  ";position:absolute;font-size:11px;" +
         'font-family:Arial,sans-serif;font-weight:bold';

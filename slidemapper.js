@@ -128,16 +128,18 @@ L.Map.addInitHook(function() {
  * of the map.
  * ========================================================== */
 L.Control.Cluster = L.Control.extend({
-  options: { position: 'topright' },
+  options: {
+    position: 'topright',
+    minValue: 0,
+    maxValue: 120,
+    stepSize: 10,
+    startValue: 80
+  },
 
   statics: {
     START: L.Browser.touch ? 'touchstart' : 'mousedown',
     END: L.Browser.touch ? 'touchend' : 'mouseup',
     MOVE: L.Browser.touch ? 'touchmove' : 'mousemove',
-    MIN: 0,
-    MAX: 120,
-    STEP: 10,
-    DEFAULT: 80
   },
 
   onAdd: function (map) {
@@ -150,7 +152,7 @@ L.Control.Cluster = L.Control.extend({
     this._handle.title = 'Clustering Size';
 
     // initial size
-    var initialStep = this._valToStep(L.Control.Cluster.DEFAULT);
+    var initialStep = this._valToStep(this.options.startValue);
     this._setStep(initialStep);
     this._steps = false; //get css-height on subsequent loads
 
@@ -208,10 +210,10 @@ L.Control.Cluster = L.Control.extend({
     var height = parseInt(L.DomUtil.getStyle(this._slider, 'height').replace('px', ''));
     var top    = L.DomUtil.getViewportOffset(this._slider).y;
     var bot    = top + height;
-    var half   = (.5 * (L.Control.Cluster.STEP / (L.Control.Cluster.MAX - L.Control.Cluster.MIN))) * height;
+    var half   = (.5 * (this.options.stepSize / (this.options.maxValue - this.options.minValue))) * height;
     this._steps = [];
-    for (var i=L.Control.Cluster.MIN; i<=L.Control.Cluster.MAX; i+=L.Control.Cluster.STEP) {
-      var perc = i / (L.Control.Cluster.MAX - L.Control.Cluster.MIN);
+    for (var i=this.options.minValue; i<=this.options.maxValue; i+=this.options.stepSize) {
+      var perc = i / (this.options.maxValue - this.options.minValue);
       this._steps.push({y: bot - (height * perc) - half, val: i, perc: perc});
     }
   },
@@ -245,6 +247,16 @@ L.Control.Cluster = L.Control.extend({
     this._handle.style.bottom = this._stepToPercentage(step);
     this._handle.style['font-weight'] = (step.val == 0) ? 'normal' : 'bold';
     this._handle.innerHTML = (step.val == 0) ? 'off' : step.val;
+    this._refreshClusterer(step.val);
+  },
+
+  // refresh the leafclusterer
+  _refreshClusterer: function(newGridSize) {
+    if (this._map.clusterer) {
+      if (this._map.clusterer.getGridSize_() != newGridSize) {
+        this._map.clusterer.setGridSize_(newGridSize);
+      }
+    }
   },
 
   // add global dragging cursor
@@ -260,8 +272,13 @@ L.Control.Cluster = L.Control.extend({
 });
 
 L.Map.addInitHook(function() {
-  if (this.options.clusterControl) {
-    this.clusterControl = new L.Control.Cluster();
+  if (this.options.cluster && this.options.clusterControl) {
+    this.clusterControl = new L.Control.Cluster({
+      minValue: this.options.clusterMinGridSize,
+      maxValue: this.options.clusterMaxGridSize,
+      stepSize: this.options.clusterGridStep,
+      startValue: this.options.clusterGridSize
+    });
     this.addControl(this.clusterControl);
   }
 });
@@ -275,6 +292,7 @@ L.Map.addInitHook(function() {
 
   // default configuration options
   var defaultOptions = {
+    // base
     mapType: 'cloudmade',
     apiKey:  null,
     center:  [40.423, -98.7372],
@@ -282,9 +300,17 @@ L.Map.addInitHook(function() {
     minZoom: 2,
     maxZoom: 10,
     slides: [],
+    // clustering
+    cluster: true,
+    clusterMaxZoom: 9,
+    clusterGridSize: 60,
+    // clustering control
     clusterControl: true,
-    constrainControl: true,
-    maxClusterZoom: 9
+    clusterMinGridSize: 0,
+    clusterMaxGridSize: 120,
+    clusterGridStep: 10,
+    // constraining control
+    constrainControl: true
   };
 
 
@@ -313,6 +339,7 @@ L.Map.addInitHook(function() {
     init: function(passedOpts) {
       if (!DATA) {
         DATA = {};
+        if (passedOpts.cluster === false) passedOpts.clusterControl = false;
         DATA.options = $.extend({}, defaultOptions, passedOpts);
 
         // create the slideshow
@@ -332,8 +359,8 @@ L.Map.addInitHook(function() {
         // pick the tiles
         var tileUrl = '';
         if (DATA.options.mapType == 'cloudmade') {
-            tileUrl = 'http://{s}.tile.cloudmade.com/{{APIKEY}}/997/256/{z}/{x}/{y}.png';
-            tileUrl = tileUrl.replace('{{APIKEY}}', DATA.options.apiKey);
+          tileUrl = 'http://{s}.tile.cloudmade.com/{{APIKEY}}/997/256/{z}/{x}/{y}.png';
+          tileUrl = tileUrl.replace('{{APIKEY}}', DATA.options.apiKey);
         }
 
         // find the center latlng
@@ -342,14 +369,26 @@ L.Map.addInitHook(function() {
         // initialize the map
         DATA.map = new L.Map(mapEl, DATA.options);
         var tiles = new L.TileLayer(tileUrl, {
-            attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://cloudmade.com">CloudMade</a>',
-            minZoom: DATA.options.minZoom,
-            maxZoom: DATA.options.maxZoom
+          attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://cloudmade.com">CloudMade</a>',
+          minZoom: DATA.options.minZoom,
+          maxZoom: DATA.options.maxZoom
         });
         DATA.map.setView(center, DATA.options.zoom).addLayer(tiles);
 
         // setup data containers
-        DATA.clusterer = new LeafClusterer(DATA.map);
+        if (DATA.options.cluster) {
+          DATA.clusterer = new LeafClusterer(DATA.map, null, {
+            gridSize: DATA.options.clusterGridSize,
+            maxZoom: DATA.options.clusterMaxZoom
+          });
+          DATA.map.clusterer = DATA.clusterer;
+        }
+        else {
+          DATA.markergroup = new L.LayerGroup();
+          DATA.map.addLayer(DATA.markergroup);
+        }
+
+        // setup initial items
         DATA.items = [];
         DATA.index = null;
         methods.add(DATA.options.slides);
@@ -372,7 +411,12 @@ L.Map.addInitHook(function() {
       marker.on('click', function(e) {
         methods.move(e.target.index);
       });
-      DATA.clusterer.addMarker(marker);
+      if (DATA.clusterer) {
+        DATA.clusterer.addMarker(marker);
+      }
+      else {
+        DATA.markergroup.addLayer(marker);
+      }
 
       // render to preview
       var caro = $THIS.find('.carousel');
