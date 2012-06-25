@@ -296,6 +296,7 @@ L.Map.addInitHook(function() {
     mapType: 'cloudmade',
     apiKey:  null,
     center:  [40.423, -98.7372],
+    closePopupOnClick: false,
     zoom:    4,
     minZoom: 2,
     maxZoom: 10,
@@ -451,15 +452,33 @@ L.Map.addInitHook(function() {
         preview: prev,
       });
 
-      // initial showing
+      // refresh or show the current popup
       if (DATA.items.length == 1) {
-        prev.addClass('active');
-        marker.openPopup();
-        DATA.map.panTo(latlng);
         DATA.index = 0;
+        DATA.items[0].preview.addClass('active');
       }
-      if (DATA.items.length > 1) {
+      if (DATA.items.length == 2) {
         $THIS.find('.control.right').show();
+      }
+      methods.showPopup(DATA.items[DATA.index].marker);
+    },
+
+    // show the popup for a marker
+    showPopup: function(marker, panTo) {
+      var latlng = marker.getLatLng();
+
+      // get a more favorable point for clustered markers
+      if (DATA.clusterer) {
+        if (clll = DATA.clusterer.getClusterLatLng(marker)) {
+          var pt = DATA.map.latLngToLayerPoint(clll);
+          pt.y += 20;
+          latlng = DATA.map.layerPointToLatLng(pt);
+        }
+      }
+      var popup = marker._popup.setLatLng(latlng);
+      DATA.map.openPopup(popup);
+      if (panTo) {
+        DATA.map.panTo(latlng);
       }
     },
 
@@ -472,10 +491,7 @@ L.Map.addInitHook(function() {
       _slideIn(DATA.items[index].preview, (index > DATA.index));
 
       // open new popup and update stored index
-      var latlng = DATA.items[index].marker.getLatLng();
-      var popup  = DATA.items[index].marker._popup.setLatLng(latlng);
-      DATA.map.openPopup(popup);
-      DATA.map.panTo(latlng);
+      methods.showPopup(DATA.items[index].marker);
       DATA.index = index;
 
       // update controls
