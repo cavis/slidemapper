@@ -336,6 +336,7 @@ function LeafClusterer(map, opt_markers, opt_opts) {
 
   /**
    * Get all the markers on the map
+   * @return {Array of Markers}
    */
   this.getMarkers = function() {
     var result = [];
@@ -349,6 +350,23 @@ function LeafClusterer(map, opt_markers, opt_opts) {
       result.push(leftMarkers_[i]);
     }
     return result;
+  };
+
+  /**
+   * Get the latlng of a cluster containing a marker. If the marker is not in
+   * the cluster, or the cluster isn't being displayed, false is returned.
+   *
+   * @param {Object} marker
+   * @return {LatLng}
+   */
+  this.getClusterLatLng = function(marker) {
+    for (var i = 0; i < clusters_.length; ++i) {
+      var cl = clusters_[i];
+      if (cl.containsMarker(marker)) {
+        return cl.getTotalMarkers() > 1 ? cl.getCenter() : false;
+      }
+    }
+    return false;
   };
 
   /**
@@ -507,6 +525,21 @@ function Cluster(leafClusterer) {
       center_ = marker.marker.getLatLng();
     }
     markers_.push(marker);
+  };
+
+  /**
+   * Determine if this cluster contains a marker or not.
+   *
+   * @param {Object} marker The marker to search for.
+   * @return {Boolean} Whether or not the marker was found.
+   */
+  this.containsMarker = function (marker) {
+    for (var i = 0; i < markers_.length; ++i) {
+      if (marker === markers_[i].marker) {
+        return true;
+      }
+    }
+    return false;
   };
 
   /**
