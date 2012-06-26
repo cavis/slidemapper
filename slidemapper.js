@@ -301,6 +301,7 @@ L.Map.addInitHook(function() {
     minZoom: 2,
     maxZoom: 10,
     slides: [],
+    exploreMode: false,
     // clustering
     cluster: true,
     clusterMaxZoom: 9,
@@ -320,7 +321,7 @@ L.Map.addInitHook(function() {
   var $THIS;
 
 
-  // helper functions to slide left and right
+  // private methods
   function _slideOut($el, goLeft) {
     var end = goLeft ? '-100%' : '100%';
     $el.css({left: '0%', display: 'block'}).removeClass('active');
@@ -330,6 +331,47 @@ L.Map.addInitHook(function() {
     var start = goLeft ? '100%' : '-100%';
     $el.css('left', start).addClass('active');
     $el.animate({left: '0%'}, 400, 'swing', function() { $el.removeAttr('style'); });
+  }
+  function _getCompass(newMarker) {
+    var newLatLng = newMarker.getLatLng();
+    var newCompass = {};
+
+    // calculate x/y distance to other markers
+    for (var i=0; i<DATA.items.length; i++) {
+      if (i == newMarker.index) continue;
+
+      // get their data
+      var compass = DATA.items[i].compass;
+      var latlng = DATA.items[i].marker.getLatLng();
+      var isabove = (latlng.lat > newLatLng.lat);
+      var isleft  = (latlng.lng < newLatLng.lng);
+
+      // determine which axis to bind to
+      var latonly = new L.LatLng(latlng.lat, newLatLng.lng);
+      var lngonly = new L.LatLng(newLatLng.lat, latlng.lng);
+      var latdist = newLatLng.distanceTo(latonly);
+      var lngdist = newLatLng.distanceTo(lngonly);
+
+      // helper to pick the nearest item
+      var pickNearest = function(dir, dist) {
+        if (!newCompass[dir] || dist < newCompass[dir].d) {
+          newCompass[dir] = {i:i, d:dist};
+        }
+        var opp = (dir == 'n' ? 's' : (dir == 's' ? 'n' : (dir == 'e' ? 'w' : 'e')));
+        if (!compass[opp] || dist < compass[opp].d) {
+          compass[opp] = {i:newMarker.index, d:dist};
+        }
+      }
+
+      // setup the new compass (and update the other one too)
+      if (latdist > lngdist) {
+        (isabove) ? pickNearest('n', latdist) : pickNearest('s', latdist);
+      }
+      else if (lngdist >= latdist) {
+        (isleft) ? pickNearest('w', latdist) : pickNearest('e', latdist);
+      }
+    }
+    return newCompass;
   }
 
 
@@ -353,8 +395,18 @@ L.Map.addInitHook(function() {
           $(this).hasClass('left') ? $THIS.slideMapper('prev') : $THIS.slideMapper('next');
         });
         $(document).keydown(function(e) {
-          if (e.keyCode == 37) $THIS.slideMapper('prev');
-          if (e.keyCode == 39) $THIS.slideMapper('next');
+          if (DATA.index !== null) {
+            if (compass = DATA.items[DATA.index].compass) {
+              if (e.keyCode == 37 && compass.w) $THIS.slideMapper('move', compass.w.i);
+              if (e.keyCode == 38 && compass.n) $THIS.slideMapper('move', compass.n.i);
+              if (e.keyCode == 39 && compass.e) $THIS.slideMapper('move', compass.e.i);
+              if (e.keyCode == 40 && compass.s) $THIS.slideMapper('move', compass.s.i);
+            }
+            else {
+              if (e.keyCode == 37) $THIS.slideMapper('prev');
+              if (e.keyCode == 39) $THIS.slideMapper('next');
+            }
+          }
         });
 
         // initialize the map
@@ -446,10 +498,14 @@ L.Map.addInitHook(function() {
       var caro = $THIS.find('.carousel');
       var prev = $('<div class="item"><div class="item-inner">'+slideHtml+'</div></div>').appendTo(caro);
 
+      // calculate arrow compass for the marker
+      var compass = DATA.options.exploreMode ? _getCompass(marker) : false;
+
       // store data in markers array
       DATA.items.push({
         marker:  marker,
         preview: prev,
+        compass: compass,
       });
 
       // refresh or show the current popup
