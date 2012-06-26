@@ -110,6 +110,7 @@
 .smapp-control-constrain-selection.down div {
     border-color: #fff;
 }
+.smapp-constrain-drawing { cursor: crosshair !important; }
 
 /* map cluster plugin */
 .smapp-control-cluster {

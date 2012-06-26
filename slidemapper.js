@@ -105,12 +105,12 @@ L.Control.Constrainer = L.Control.extend({
 
   // add global drawing cursor
   _setDrawingCursor: function() {
-    document.body.className += ' smapp-slider-dragging';
+    document.body.className += ' smapp-constrain-drawing';
   },
 
   // remove global dragging cursor
   _restoreCursor: function() {
-    document.body.className = document.body.className.replace(/ smapp-slider-dragging/g, '');
+    document.body.className = document.body.className.replace(/ smapp-constrain-drawing/g, '');
   },
 
 });
