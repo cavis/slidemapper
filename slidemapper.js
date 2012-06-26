@@ -356,24 +356,47 @@ L.Map.addInitHook(function() {
           if (e.keyCode == 39) $THIS.slideMapper('next');
         });
 
-        // pick the tiles
-        var tileUrl = '';
+        // initialize the map
+        DATA.options.center = new L.LatLng(DATA.options.center[0], DATA.options.center[1]);
+        DATA.map = new L.Map(mapEl, DATA.options);
+
+        // tiles
         if (DATA.options.mapType == 'cloudmade') {
           tileUrl = 'http://{s}.tile.cloudmade.com/{{APIKEY}}/997/256/{z}/{x}/{y}.png';
           tileUrl = tileUrl.replace('{{APIKEY}}', DATA.options.apiKey);
+          var tiles = new L.TileLayer(tileUrl, {attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://cloudmade.com">CloudMade</a>'});
+          DATA.map.addLayer(tiles);
         }
-
-        // find the center latlng
-        var center = new L.LatLng(DATA.options.center[0], DATA.options.center[1]);
-
-        // initialize the map
-        DATA.map = new L.Map(mapEl, DATA.options);
-        var tiles = new L.TileLayer(tileUrl, {
-          attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://cloudmade.com">CloudMade</a>',
-          minZoom: DATA.options.minZoom,
-          maxZoom: DATA.options.maxZoom
-        });
-        DATA.map.setView(center, DATA.options.zoom).addLayer(tiles);
+        else if (DATA.options.mapType == 'stamen-toner') {
+          var tiles = new L.StamenTileLayer('toner');
+          DATA.map.addLayer(tiles);
+        }
+        else if (DATA.options.mapType == 'stamen-terrain') {
+          var tiles = new L.StamenTileLayer('terrain');
+          DATA.map.addLayer(tiles);
+        }
+        else if (DATA.options.mapType == 'stamen-watercolor') {
+          var tiles = new L.StamenTileLayer('watercolor');
+          DATA.map.addLayer(tiles);
+        }
+        else if (DATA.options.mapType == 'mapquest') {
+          var tileUrl = 'http://{s}.mqcdn.com/tiles/1.0.0/osm/{z}/{x}/{y}.png';
+          var tileOpts = {
+            subdomains:  ['otile1', 'otile2', 'otile3', 'otile4'],
+            attribution: 'Tiles Courtesy of <a href="http://www.mapquest.com/" target="_blank">MapQuest</a> <img src="http://developer.mapquest.com/content/osm/mq_logo.png">'
+          };
+          var tiles = new L.TileLayer(tileUrl, tileOpts);
+          DATA.map.addLayer(tiles);
+        }
+        else if (DATA.options.mapType == 'mapquest-aerial') {
+          var tileUrl = 'http://{s}.mqcdn.com/tiles/1.0.0/sat/{z}/{x}/{y}.png';
+          var tileOpts = {
+            subdomains:  ['oatile1', 'oatile2', 'oatile3', 'oatile4'],
+            attribution: 'Tiles Courtesy of <a href="http://www.mapquest.com/" target="_blank">MapQuest</a> <img src="http://developer.mapquest.com/content/osm/mq_logo.png">'
+          };
+          var tiles = new L.TileLayer(tileUrl, tileOpts);
+          DATA.map.addLayer(tiles);
+        }
 
         // setup data containers
         if (DATA.options.cluster) {
