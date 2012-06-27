@@ -341,11 +341,12 @@ L.Map.addInitHook(function() {
       var $prevEl = $THIS.find('.smapp-slides');
       if (!DATA.autoHeight) DATA.autoHeight = $prevEl.height();
       var inner = $el.find('.item-inner').height(), outer = $prevEl.height();
-      if (inner > DATA.autoHeight && outer <= DATA.autoHeight) {
+      if (inner > outer) {
         animate ? $prevEl.animate({'height': inner}, DATA.options.animateSpeed) : $prevEl.height(inner);
       }
-      else if (inner <= DATA.autoHeight && outer > DATA.autoHeight) {
-        animate ? $prevEl.animate({'height': DATA.autoHeight}, DATA.options.animateSpeed) : $prevEl.height(DATA.autoHeight);
+      else if (inner < outer) {
+        var newH = Math.max(inner, DATA.autoHeight);
+        animate ? $prevEl.animate({'height': newH}, DATA.options.animateSpeed) : $prevEl.height(newH);
       }
     }
   }
@@ -530,6 +531,7 @@ L.Map.addInitHook(function() {
       if (DATA.items.length == 1) {
         DATA.index = 0;
         DATA.items[0].preview.addClass('active');
+        _autoHeight(DATA.items[0].preview, false);
       }
       if (DATA.items.length == 2) {
         $THIS.find('.control.right').show();
