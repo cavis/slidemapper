@@ -301,6 +301,7 @@ L.Map.addInitHook(function() {
     minZoom: 2,
     maxZoom: 10,
     slides: [],
+    keyEvents: true,
     exploreMode: false,
     // display options
     autoHeight: true,
@@ -349,6 +350,66 @@ L.Map.addInitHook(function() {
         animate ? $prevEl.animate({'height': newH}, DATA.options.animateSpeed) : $prevEl.height(newH);
       }
     }
+  }
+  function _onControlClick(e) {
+    $(this).hasClass('left') ? $THIS.slideMapper('prev') : $THIS.slideMapper('next');
+  }
+  function _onKeyPress(e) {
+    if (DATA.index !== null) {
+      if (compass = DATA.items[DATA.index].compass) {
+        if (e.keyCode == 37 && compass.w) $THIS.slideMapper('move', compass.w.i);
+        if (e.keyCode == 38 && compass.n) $THIS.slideMapper('move', compass.n.i);
+        if (e.keyCode == 39 && compass.e) $THIS.slideMapper('move', compass.e.i);
+        if (e.keyCode == 40 && compass.s) $THIS.slideMapper('move', compass.s.i);
+      }
+      else {
+        if (e.keyCode == 37) $THIS.slideMapper('prev');
+        if (e.keyCode == 39) $THIS.slideMapper('next');
+      }
+    }
+  }
+  function _setTiles(tileType) {
+    if (DATA.tileLayer) {
+      DATA.map.removeLayer(DATA.tileLayer);
+      DATA.tileLayer = false;
+    }
+
+    // set the new tile layer
+    if (tileType == 'cloudmade') {
+      if (!DATA.options.apiKey) alert('apiKey required for cloudmade tiles');
+      var tileOpts = {attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://cloudmade.com">CloudMade</a>'};
+      DATA.tileLayer = new L.TileLayer('http://{s}.tile.cloudmade.com/'+DATA.options.apiKey+'/997/256/{z}/{x}/{y}.png', tileOpts);
+    }
+    else if (tileType == 'stamen-toner') {
+      if (!L.StamenTileLayer) alert('did you forget to include tile.stamen.js?');
+      DATA.tileLayer = new L.StamenTileLayer('toner');
+    }
+    else if (tileType == 'stamen-terrain') {
+      if (!L.StamenTileLayer) alert('did you forget to include tile.stamen.js?');
+      DATA.tileLayer = new L.StamenTileLayer('terrain');
+    }
+    else if (tileType == 'stamen-watercolor') {
+      if (!L.StamenTileLayer) alert('did you forget to include tile.stamen.js?');
+      DATA.tileLayer = new L.StamenTileLayer('watercolor');
+    }
+    else if (tileType == 'mapquest') {
+      var tileOpts = {
+        subdomains:  ['otile1', 'otile2', 'otile3', 'otile4'],
+        attribution: 'Tiles Courtesy of <a href="http://www.mapquest.com/" target="_blank">MapQuest</a> <img src="http://developer.mapquest.com/content/osm/mq_logo.png">'
+      };
+      DATA.tileLayer = new L.TileLayer('http://{s}.mqcdn.com/tiles/1.0.0/osm/{z}/{x}/{y}.png', tileOpts);
+    }
+    else if (tileType == 'mapquest-aerial') {
+      var tileOpts = {
+        subdomains:  ['oatile1', 'oatile2', 'oatile3', 'oatile4'],
+        attribution: 'Tiles Courtesy of <a href="http://www.mapquest.com/" target="_blank">MapQuest</a> <img src="http://developer.mapquest.com/content/osm/mq_logo.png">'
+      };
+      DATA.tileLayer = new L.TileLayer('http://{s}.mqcdn.com/tiles/1.0.0/sat/{z}/{x}/{y}.png', tileOpts);
+    }
+    else {
+      alert('invalid tile type: '+tileType);
+    }
+    DATA.map.addLayer(DATA.tileLayer);
   }
   function _getCompass(newMarker) {
     var newLatLng = newMarker.getLatLng();
@@ -409,65 +470,13 @@ L.Map.addInitHook(function() {
         var mapEl  = $('.smapp-map',  $THIS)[0];
 
         // left/right listeners
-        $THIS.find('.control').click(function(e) {
-          $(this).hasClass('left') ? $THIS.slideMapper('prev') : $THIS.slideMapper('next');
-        });
-        $(document).keydown(function(e) {
-          if (DATA.index !== null) {
-            if (compass = DATA.items[DATA.index].compass) {
-              if (e.keyCode == 37 && compass.w) $THIS.slideMapper('move', compass.w.i);
-              if (e.keyCode == 38 && compass.n) $THIS.slideMapper('move', compass.n.i);
-              if (e.keyCode == 39 && compass.e) $THIS.slideMapper('move', compass.e.i);
-              if (e.keyCode == 40 && compass.s) $THIS.slideMapper('move', compass.s.i);
-            }
-            else {
-              if (e.keyCode == 37) $THIS.slideMapper('prev');
-              if (e.keyCode == 39) $THIS.slideMapper('next');
-            }
-          }
-        });
+        $THIS.find('.control').click(_onControlClick);
+        if (DATA.options.keyEvents) $(document).keydown(_onKeyPress);
 
         // initialize the map
         DATA.options.center = new L.LatLng(DATA.options.center[0], DATA.options.center[1]);
         DATA.map = new L.Map(mapEl, DATA.options);
-
-        // tiles
-        if (DATA.options.mapType == 'cloudmade') {
-          tileUrl = 'http://{s}.tile.cloudmade.com/{{APIKEY}}/997/256/{z}/{x}/{y}.png';
-          tileUrl = tileUrl.replace('{{APIKEY}}', DATA.options.apiKey);
-          var tiles = new L.TileLayer(tileUrl, {attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://cloudmade.com">CloudMade</a>'});
-          DATA.map.addLayer(tiles);
-        }
-        else if (DATA.options.mapType == 'stamen-toner') {
-          var tiles = new L.StamenTileLayer('toner');
-          DATA.map.addLayer(tiles);
-        }
-        else if (DATA.options.mapType == 'stamen-terrain') {
-          var tiles = new L.StamenTileLayer('terrain');
-          DATA.map.addLayer(tiles);
-        }
-        else if (DATA.options.mapType == 'stamen-watercolor') {
-          var tiles = new L.StamenTileLayer('watercolor');
-          DATA.map.addLayer(tiles);
-        }
-        else if (DATA.options.mapType == 'mapquest') {
-          var tileUrl = 'http://{s}.mqcdn.com/tiles/1.0.0/osm/{z}/{x}/{y}.png';
-          var tileOpts = {
-            subdomains:  ['otile1', 'otile2', 'otile3', 'otile4'],
-            attribution: 'Tiles Courtesy of <a href="http://www.mapquest.com/" target="_blank">MapQuest</a> <img src="http://developer.mapquest.com/content/osm/mq_logo.png">'
-          };
-          var tiles = new L.TileLayer(tileUrl, tileOpts);
-          DATA.map.addLayer(tiles);
-        }
-        else if (DATA.options.mapType == 'mapquest-aerial') {
-          var tileUrl = 'http://{s}.mqcdn.com/tiles/1.0.0/sat/{z}/{x}/{y}.png';
-          var tileOpts = {
-            subdomains:  ['oatile1', 'oatile2', 'oatile3', 'oatile4'],
-            attribution: 'Tiles Courtesy of <a href="http://www.mapquest.com/" target="_blank">MapQuest</a> <img src="http://developer.mapquest.com/content/osm/mq_logo.png">'
-          };
-          var tiles = new L.TileLayer(tileUrl, tileOpts);
-          DATA.map.addLayer(tiles);
-        }
+        _setTiles(DATA.options.mapType);        
 
         // setup data containers
         if (DATA.options.cluster) {
