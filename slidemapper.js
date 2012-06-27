@@ -411,6 +411,23 @@ L.Map.addInitHook(function() {
     }
     DATA.map.addLayer(DATA.tileLayer);
   }
+  function _showPopup(marker, panTo) {
+    var latlng = marker.getLatLng();
+
+    // get a more favorable point for clustered markers
+    if (DATA.clusterer) {
+      if (clll = DATA.clusterer.getClusterLatLng(marker)) {
+        var pt = DATA.map.latLngToLayerPoint(clll);
+        pt.y += 20;
+        latlng = DATA.map.layerPointToLatLng(pt);
+      }
+    }
+    var popup = marker._popup.setLatLng(latlng);
+    DATA.map.openPopup(popup);
+    if (panTo) {
+      DATA.map.panTo(latlng);
+    }
+  }
   function _getCompass(newMarker) {
     var newLatLng = newMarker.getLatLng();
     var newCompass = {};
@@ -484,7 +501,7 @@ L.Map.addInitHook(function() {
             gridSize: DATA.options.clusterGridSize,
             maxZoom: DATA.options.clusterMaxZoom
           });
-          DATA.map.clusterer = DATA.clusterer;
+          DATA.map.clusterer = DATA.clusterer; //give map a ref
         }
         else {
           DATA.markergroup = new L.LayerGroup();
@@ -514,12 +531,7 @@ L.Map.addInitHook(function() {
       marker.on('click', function(e) {
         methods.move(e.target.index, true);
       });
-      if (DATA.clusterer) {
-        DATA.clusterer.addMarker(marker);
-      }
-      else {
-        DATA.markergroup.addLayer(marker);
-      }
+      DATA.clusterer ? DATA.clusterer.addMarker(marker) : DATA.markergroup.addLayer(marker);
 
       // render to preview
       var caro = $THIS.find('.smapp-carousel');
@@ -545,26 +557,7 @@ L.Map.addInitHook(function() {
       if (DATA.items.length == 2) {
         $THIS.find('.control.right').show();
       }
-      methods.showPopup(DATA.items[DATA.index].marker);
-    },
-
-    // show the popup for a marker
-    showPopup: function(marker, panTo) {
-      var latlng = marker.getLatLng();
-
-      // get a more favorable point for clustered markers
-      if (DATA.clusterer) {
-        if (clll = DATA.clusterer.getClusterLatLng(marker)) {
-          var pt = DATA.map.latLngToLayerPoint(clll);
-          pt.y += 20;
-          latlng = DATA.map.layerPointToLatLng(pt);
-        }
-      }
-      var popup = marker._popup.setLatLng(latlng);
-      DATA.map.openPopup(popup);
-      if (panTo) {
-        DATA.map.panTo(latlng);
-      }
+      _showPopup(DATA.items[DATA.index].marker);
     },
 
     // move to a different marker
@@ -576,7 +569,7 @@ L.Map.addInitHook(function() {
       _slideIn(DATA.items[index].preview, (index > DATA.index));
 
       // open new popup and update stored index
-      methods.showPopup(DATA.items[index].marker, panTo);
+      _showPopup(DATA.items[index].marker, panTo);
       DATA.index = index;
 
       // update controls
