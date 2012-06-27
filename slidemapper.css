@@ -20,7 +20,7 @@
 /* slideshow element */
 .smapp-slides {
     width: 100%;
-    min-height: 200px;
+    height: 200px;
     position: relative;
     line-height: 1;
     overflow: hidden;
@@ -72,7 +72,8 @@
     left: 100%;
 }
 .smapp-slides .item.active { left: 0; display: block; }
-.smapp-slides .item-inner { position: relative; margin: 0 90px; }
+.smapp-slides .item-inner { position: relative; }
+.smapp-slides .item-inner.margins { margin: 0 90px; }
 
 
 /* leaflet map */

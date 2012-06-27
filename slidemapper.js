@@ -302,17 +302,21 @@ L.Map.addInitHook(function() {
     maxZoom: 10,
     slides: [],
     exploreMode: false,
+    // display options
+    autoHeight: true,
+    slideMargins: true,
+    animateSpeed: 200,
     // clustering
-    cluster: true,
+    cluster: false,
     clusterMaxZoom: 9,
     clusterGridSize: 60,
     // clustering control
-    clusterControl: true,
+    clusterControl: false,
     clusterMinGridSize: 0,
     clusterMaxGridSize: 120,
     clusterGridStep: 10,
     // constraining control
-    constrainControl: true
+    constrainControl: false
   };
 
 
@@ -323,14 +327,27 @@ L.Map.addInitHook(function() {
 
   // private methods
   function _slideOut($el, goLeft) {
-    var end = goLeft ? '-100%' : '100%';
-    $el.css({left: '0%', display: 'block'}).removeClass('active');
-    $el.animate({left: end}, 400, 'swing', function() { $el.removeAttr('style'); });
+    var end = goLeft ? -($el.width()) : $el.width();
+    $el.animate({'margin-left': end}, DATA.options.animateSpeed, 'swing', function() { $el.removeClass('active').removeAttr('style'); });
   }
   function _slideIn($el, goLeft) {
-    var start = goLeft ? '100%' : '-100%';
-    $el.css('left', start).addClass('active');
-    $el.animate({left: '0%'}, 400, 'swing', function() { $el.removeAttr('style'); });
+    var start = goLeft ? $el.width() : -($el.width());
+    $el.css('margin-left', start).addClass('active');
+    $el.animate({'margin-left': 0}, DATA.options.animateSpeed, 'swing', function() { $el.removeAttr('style'); });
+    _autoHeight($el, true);
+  }
+  function _autoHeight($el, animate) {
+    if (DATA.options.autoHeight) {
+      var $prevEl = $THIS.find('.smapp-slides');
+      if (!DATA.autoHeight) DATA.autoHeight = $prevEl.height();
+      var inner = $el.find('.item-inner').height(), outer = $prevEl.height();
+      if (inner > DATA.autoHeight && outer <= DATA.autoHeight) {
+        animate ? $prevEl.animate({'height': inner}, DATA.options.animateSpeed) : $prevEl.height(inner);
+      }
+      else if (inner <= DATA.autoHeight && outer > DATA.autoHeight) {
+        animate ? $prevEl.animate({'height': DATA.autoHeight}, DATA.options.animateSpeed) : $prevEl.height(DATA.autoHeight);
+      }
+    }
   }
   function _getCompass(newMarker) {
     var newLatLng = newMarker.getLatLng();
@@ -386,7 +403,7 @@ L.Map.addInitHook(function() {
         DATA.options = $.extend({}, defaultOptions, passedOpts);
 
         // create the slideshow
-        $THIS.append('<div class="smapp-slides"><div class="carousel"></div><span class="left control">‹</span><span class="right control">›</span></div><div class="smapp-map"></div>');
+        $THIS.append('<div class="smapp-slides"><div class="smapp-carousel"></div><span class="left control">‹</span><span class="right control">›</span></div><div class="smapp-map"></div>');
         var prevEl = $('.smapp-slides', $THIS)[0];
         var mapEl  = $('.smapp-map',  $THIS)[0];
 
@@ -485,7 +502,7 @@ L.Map.addInitHook(function() {
       var marker = new L.Marker(latlng).bindPopup(mapHtml);
       marker.index = DATA.items.length;
       marker.on('click', function(e) {
-        methods.move(e.target.index);
+        methods.move(e.target.index, true);
       });
       if (DATA.clusterer) {
         DATA.clusterer.addMarker(marker);
@@ -495,8 +512,9 @@ L.Map.addInitHook(function() {
       }
 
       // render to preview
-      var caro = $THIS.find('.carousel');
-      var prev = $('<div class="item"><div class="item-inner">'+slideHtml+'</div></div>').appendTo(caro);
+      var caro = $THIS.find('.smapp-carousel');
+      var cls  = DATA.options.slideMargins ? 'item-inner margins' : 'item-inner';
+      var prev = $('<div class="item"><div class="'+cls+'">'+slideHtml+'</div></div>').appendTo(caro);
 
       // calculate arrow compass for the marker
       var compass = DATA.options.exploreMode ? _getCompass(marker) : false;
@@ -539,7 +557,7 @@ L.Map.addInitHook(function() {
     },
 
     // move to a different marker
-    move: function(index) {
+    move: function(index, panTo) {
       if (index === null || index >= DATA.items.length || index < 0 || index == DATA.index) return;
 
       // slide out the old, in the new preview
@@ -547,7 +565,7 @@ L.Map.addInitHook(function() {
       _slideIn(DATA.items[index].preview, (index > DATA.index));
 
       // open new popup and update stored index
-      methods.showPopup(DATA.items[index].marker);
+      methods.showPopup(DATA.items[index].marker, panTo);
       DATA.index = index;
 
       // update controls
@@ -567,12 +585,12 @@ L.Map.addInitHook(function() {
 
     // next!
     next: function() {
-      methods.move(DATA.index === null ? 0 : DATA.index + 1);
+      methods.move(DATA.index === null ? 0 : DATA.index + 1, true);
     },
 
     // previous!
     prev: function() {
-      methods.move(DATA.index === null ? 0 : DATA.index - 1);
+      methods.move(DATA.index === null ? 0 : DATA.index - 1, true);
     }
 
   };
