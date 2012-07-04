@@ -4,6 +4,8 @@ Slidemapper
 
 A jQuery plugin for creating slideshows on a leaflet map.  Will render a slideshow-carousel linked to a map inside selected elements, extending to the full width of the container.  The map will follow along as the user arrows/clicks through the geotagged slides.
 
+Check out [the demo here](http://cav.is/slidemapper/example/index.html "Demo").  Unless you're busy.  Cause I totally understand.
+
 
 ![Alt text](http://cav.is/img/slidemapper-example.png "Slidemapper Demo")
 
