@@ -11,6 +11,7 @@
     <link href="externals/leaflet/leaflet.css" rel="stylesheet">
     <link href="../slidemapper.css" rel="stylesheet">
     <style type="text/css">
+      .smapp { border:1px solid #666; }
       .center { width:800px; margin:0 auto; }
       #options { margin-bottom: 30px; }
       #options label { display: inline-block; width: 130px; clear: both; }
@@ -115,9 +116,7 @@
         // helper to add sample data
         // TODO: fix options setter to preserve slides
         function testData() {
-          $mapper.slideMapper('add', EXAMPLEDATA[2][0], EXAMPLEDATA[2][1], EXAMPLEDATA[2][2]);
-          $mapper.slideMapper('add', EXAMPLEDATA[3][0], EXAMPLEDATA[3][1], EXAMPLEDATA[3][2]);
-          $mapper.slideMapper('add', EXAMPLEDATA[4][0], EXAMPLEDATA[4][1], EXAMPLEDATA[4][2]);
+          $mapper.slideMapper('add', EXAMPLEDATA);
         }
         testData();
 

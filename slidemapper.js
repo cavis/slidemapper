@@ -59,12 +59,12 @@
     // height/layout settings
     mapPosition: 'bottom', //top|bottom
     mapHeight: 400,
-    slideHeight: 200, //if autoHeight, this serves as the min slide height
+    slideHeight: 220, //if autoHeight, this serves as the min slide height
     autoHeight: false,
 
     // slideshow settings
     animateSpeed: 200,
-    controlType: 'sides', // sides|top
+    controlType: 'sides' // sides|top
   };
 
 
@@ -86,15 +86,15 @@
   }
   function _autoHeight($el, animate) {
     if (DATA.options.autoHeight) {
-      var $prevEl = $THIS.find('.smapp-slides');
-      if (!DATA.autoHeight) DATA.autoHeight = $prevEl.height();
-      var inner = $el.find('.item-inner').height(), outer = $prevEl.height();
+      var $slide = $THIS.find('.smapp-show');
+      if (!DATA.autoHeight) DATA.autoHeight = $slide.height();
+      var inner = $el.find('.slide-inner').height(), outer = $slide.height();
       if (inner > outer) {
-        animate ? $prevEl.animate({'height': inner}, DATA.options.animateSpeed) : $prevEl.height(inner);
+        animate ? $slide.animate({'height': inner}, DATA.options.animateSpeed) : $slide.height(inner);
       }
       else if (inner < outer) {
         var newH = Math.max(inner, DATA.autoHeight);
-        animate ? $prevEl.animate({'height': newH}, DATA.options.animateSpeed) : $prevEl.height(newH);
+        animate ? $slide.animate({'height': newH}, DATA.options.animateSpeed) : $slide.height(newH);
       }
     }
   }
@@ -197,13 +197,15 @@
     s += (opts.mapPosition === 'bottom') ? map : '';
     return s;
   }
-  function _showPopup(marker, panTo) {
-    var latlng = marker.getLatLng();
-    var popup = marker._popup.setLatLng(latlng);
-    DATA.map.openPopup(popup);
-    if (panTo) {
-      DATA.map.panTo(latlng);
+  function _showPopup(item, panTo) {
+    DATA.map.closePopup();
+    if (item.marker && item.config.popup) {
+      var popup = item.marker._popup.setLatLng(item.marker.getLatLng());
+      DATA.map.openPopup(popup);
     }
+
+    // determine the center
+    DATA.map.setView(item.center, item.zoom || DATA.map.getZoom(), panTo ? false : true);
   }
   function _getCompass(newMarker) {
     var newLatLng = newMarker.getLatLng();
@@ -296,48 +298,55 @@
     },
 
     // add a datapoint/marker to the map
-    add: function(latlng, mapHtml, slideHtml) {
-      if (arguments.length == 1 && arguments[0] instanceof Array) {
-        for (var i=0; i<arguments[0].length; i++) {
-          methods.add.apply(this, arguments[0][i]);
-        }
+    add: function(cfg) {
+      if (cfg instanceof Array) {
+        for (var i=0; i<cfg.length; i++) methods.add.call(this, cfg[i]);
         return;
       }
+      var item = {config: cfg};
 
-      // add to map
-      var latlng = new L.LatLng(latlng[0], latlng[1]);
-      var marker = new L.Marker(latlng).bindPopup(mapHtml);
-      marker.index = DATA.items.length;
-      marker.on('click', function(e) {
-        methods.move(e.target.index, true);
-      });
-      DATA.markergroup.addLayer(marker);
+      // add marker to map
+      if (cfg.marker) {
+        var latlng = new L.LatLng(cfg.marker[0], cfg.marker[1]);
+        item.marker = new L.Marker(latlng);
+        if (cfg.popup) item.marker.bindPopup(cfg.popup);
+
+        item.marker.index = DATA.items.length;
+        item.marker.on('click', function(e) {
+          methods.move(e.target.index, true);
+        });
+        DATA.markergroup.addLayer(item.marker);
+      }
 
       // render to slide
       var slidesCt = $THIS.find('.smapp-slides-ct');
-      var slide = $('<div class="slide"><div class="slide-inner">'+slideHtml+'</div></div>').appendTo(slidesCt);
+      var inner = '<div class="slide-inner">'+(cfg.html || '')+'</div>';
+      item.slide = $('<div class="slide">'+inner+'</div>').appendTo(slidesCt);
 
       // calculate arrow compass for the marker
-      var compass = DATA.options.exploreMode ? _getCompass(marker) : false;
+      if (DATA.options.exploreMode && data.options.keyEvents && item.marker) {
+        item.compass = _getCompass(item.marker);
+      }
 
-      // store data in markers array
-      DATA.items.push({
-        marker:  marker,
-        slide:   slide,
-        compass: compass
-      });
+      // figure out center and zoom (optional)
+      item.zoom = item.marker ? cfg.zoom : DATA.options.zoom;
+      item.center = item.marker ? item.marker.getLatLng() : DATA.options.center;
+      if (cfg.center) {
+        item.center = new L.LatLng(cfg.center[0], cfg.center[1]);
+      }
 
-      // refresh or show the current popup
+      // store in items array, then refresh or show the current popup
+      DATA.items.push(item);
       if (DATA.items.length == 1) {
         DATA.index = 0;
         DATA.items[0].slide.addClass('active');
         _autoHeight(DATA.items[0].slide, false);
+        _showPopup(DATA.items[DATA.index]);
       }
       if (DATA.items.length == 2) {
         $THIS.find('.ctrl-right').addClass('active');
       }
       $THIS.find('.ctrl-count').html(DATA.index+1 + ' of ' + DATA.items.length);
-      _showPopup(DATA.items[DATA.index].marker);
     },
 
     // move to a different marker
@@ -349,7 +358,7 @@
       _slideIn(DATA.items[index].slide, (index > DATA.index));
 
       // open new popup and update stored index
-      _showPopup(DATA.items[index].marker, panTo);
+      _showPopup(DATA.items[index], panTo);
       DATA.index = index;
 
       // update controls

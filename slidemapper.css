@@ -26,11 +26,11 @@
   overflow: hidden;
 }
 .smapp-slides-ct {}
-.smapp-show .slide {}
-.smapp-show .slide-inner {}
 
 /* slides */
 .smapp-show .slide {
+  overflow-x: hidden;
+  overflow-y: scroll;
   display: none;
   position: absolute;
   top: 0;
@@ -39,7 +39,7 @@
   left: 100%;
 }
 .smapp-show .slide.active { left: 0; display: block; }
-.smapp-show .slide-inner { position: relative; }
+.smapp-show .slide-inner { position: relative; overflow: hidden; }
 
 /* side controls */
 .ctrl-side {
