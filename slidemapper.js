@@ -27,21 +27,44 @@
 
   // default configuration options
   var defaultOptions = {
-    // base
+
+    // an initial set of slides to add to the map
+    // (optional... you can always add slides later)
+    slides: [],
+
+    // the type of map to use. valid options are: cloudmade / stamen-toner /
+    // stamen-terrain / stamen-watercolor / mapquest / mapquest-aerial
     mapType: 'mapquest',
+
+    // if using cloudmade tiles, provide your apikey here
     apiKey:  null,
-    center:  [40.423, -98.7372],
-    closePopupOnClick: false,
-    zoom:    4,
+
+    // the default/fallback center and zoomlevel of the map
+    center: [40.423, -98.7372],
+    zoom: 4,
+
+    // minimum and maximum allowed zoom levels
     minZoom: 2,
     maxZoom: 10,
-    slides: [],
+
+    // enable key events (left-right arrow keys)
     keyEvents: true,
+
+    // experimental shortest-path arrow key controls
     exploreMode: false,
-    // display options
-    autoHeight: true,
-    slideMargins: true,
-    animateSpeed: 200
+
+    // allow popups to close on the map
+    closePopupOnClick: false,
+
+    // height/layout settings
+    mapPosition: 'bottom', //top|bottom
+    mapHeight: 400,
+    slideHeight: 200, //if autoHeight, this serves as the min slide height
+    autoHeight: false,
+
+    // slideshow settings
+    animateSpeed: 200,
+    controlType: 'sides', // sides|top
   };
 
 
@@ -74,9 +97,6 @@
         animate ? $prevEl.animate({'height': newH}, DATA.options.animateSpeed) : $prevEl.height(newH);
       }
     }
-  }
-  function _onControlClick(e) {
-    $(this).hasClass('left') ? $THIS.slideMapper('prev') : $THIS.slideMapper('next');
   }
   function _onKeyPress(e) {
     if (DATA.index !== null) {
@@ -134,6 +154,48 @@
       alert('invalid tile type: '+tileType);
     }
     DATA.map.addLayer(DATA.tileLayer);
+  }
+  function _makeHTML(opts) {
+    var map, mapStyle = 'style="height:'+opts.mapHeight+'px"';
+    if (opts.mapPosition === 'top') {
+      map = '<div class="smapp-map top" '+mapStyle+'></div>';
+    }
+    else if (opts.mapPosition === 'bottom') {
+      map = '<div class="smapp-map bottom" '+mapStyle+'></div>';
+    }
+    else {
+      alert('Invalid mapPosition: '+opts.mapPosition);
+    }
+
+    // slideshow gets either height or min-height
+    var show = opts.autoHeight
+      ? '<div class="smapp-show" style="min-height:'+opts.slideHeight+'px">'
+      : '<div class="smapp-show" style="height:'+opts.slideHeight+'px">';
+    show += '<div class="smapp-slides-ct"></div>';
+
+    // controls
+    if (opts.controlType === 'sides') {
+      show += '<span class="ctrl-left ctrl-side">&lsaquo;</span>';
+      show += '<span class="ctrl-right ctrl-side">&rsaquo;</span>';
+    }
+    else if (opts.controlType === 'top') {
+      show += '<div class="ctrl-top">';
+      show += '<span class="ctrl-left">&lsaquo;</span>';
+      show += '<span class="ctrl-count">0 of 0</span>';
+      show += '<span class="ctrl-right">&rsaquo;</span>';
+      show += '</div>';
+    }
+    else {
+      alert('Invalid controlType: '+opts.controlType);
+    }
+    show += '</div>'; //end smapp-show
+
+    // assemble in container
+    var s = '<div class="smapp">';
+    s += (opts.mapPosition === 'top') ? map : '';
+    s += show;
+    s += (opts.mapPosition === 'bottom') ? map : '';
+    return s;
   }
   function _showPopup(marker, panTo) {
     var latlng = marker.getLatLng();
@@ -194,14 +256,27 @@
       if (!DATA) {
         DATA = {};
         DATA.options = $.extend({}, defaultOptions, passedOpts);
+        methods.options(passedOpts || {});
+      }
+    },
 
-        // create the slideshow
-        $THIS.append('<div class="smapp-slides"><div class="smapp-carousel"></div><span class="left control">‹</span><span class="right control">›</span></div><div class="smapp-map"></div>');
-        var prevEl = $('.smapp-slides', $THIS)[0];
-        var mapEl  = $('.smapp-map',  $THIS)[0];
+    // get or set map options
+    options: function(passedOpts) {
+      if (passedOpts === undefined) {
+        return DATA.options;
+      }
+      else {
+        DATA.options = $.extend({}, DATA.options, passedOpts);
+        $THIS.empty();
+        $(document).unbind('keydown', _onKeyPress);
+        $THIS.append(_makeHTML(DATA.options));
+        showEl = $('.smapp-show', $THIS)[0];
+        mapEl  = $('.smapp-map',  $THIS)[0];
 
         // left/right listeners
-        $THIS.find('.control').click(_onControlClick);
+        $(showEl)
+          .on('click', '.ctrl-left', function() {$THIS.slideMapper('prev');})
+          .on('click', '.ctrl-right', function() {$THIS.slideMapper('next');});
         if (DATA.options.keyEvents) $(document).keydown(_onKeyPress);
 
         // initialize the map
@@ -238,10 +313,9 @@
       });
       DATA.markergroup.addLayer(marker);
 
-      // render to preview
-      var caro = $THIS.find('.smapp-carousel');
-      var cls  = DATA.options.slideMargins ? 'item-inner margins' : 'item-inner';
-      var prev = $('<div class="item"><div class="'+cls+'">'+slideHtml+'</div></div>').appendTo(caro);
+      // render to slide
+      var slidesCt = $THIS.find('.smapp-slides-ct');
+      var slide = $('<div class="slide"><div class="slide-inner">'+slideHtml+'</div></div>').appendTo(slidesCt);
 
       // calculate arrow compass for the marker
       var compass = DATA.options.exploreMode ? _getCompass(marker) : false;
@@ -249,19 +323,20 @@
       // store data in markers array
       DATA.items.push({
         marker:  marker,
-        preview: prev,
-        compass: compass,
+        slide:   slide,
+        compass: compass
       });
 
       // refresh or show the current popup
       if (DATA.items.length == 1) {
         DATA.index = 0;
-        DATA.items[0].preview.addClass('active');
-        _autoHeight(DATA.items[0].preview, false);
+        DATA.items[0].slide.addClass('active');
+        _autoHeight(DATA.items[0].slide, false);
       }
       if (DATA.items.length == 2) {
-        $THIS.find('.control.right').show();
+        $THIS.find('.ctrl-right').addClass('active');
       }
+      $THIS.find('.ctrl-count').html(DATA.index+1 + ' of ' + DATA.items.length);
       _showPopup(DATA.items[DATA.index].marker);
     },
 
@@ -270,8 +345,8 @@
       if (index === null || index >= DATA.items.length || index < 0 || index == DATA.index) return;
 
       // slide out the old, in the new preview
-      _slideOut(DATA.items[DATA.index].preview, (index > DATA.index));
-      _slideIn(DATA.items[index].preview, (index > DATA.index));
+      _slideOut(DATA.items[DATA.index].slide, (index > DATA.index));
+      _slideIn(DATA.items[index].slide, (index > DATA.index));
 
       // open new popup and update stored index
       _showPopup(DATA.items[index].marker, panTo);
@@ -279,17 +354,18 @@
 
       // update controls
       if (index == 0) {
-        $THIS.find('.control.left').hide();
-        $THIS.find('.control.right').show();
+        $THIS.find('.ctrl-left').removeClass('active');
+        $THIS.find('.ctrl-right').addClass('active');
       }
       else if (index == DATA.items.length - 1) {
-        $THIS.find('.control.left').show();
-        $THIS.find('.control.right').hide();
+        $THIS.find('.ctrl-left').addClass('active');
+        $THIS.find('.ctrl-right').removeClass('active');
       }
       else {
-        $THIS.find('.control.left').show();
-        $THIS.find('.control.right').show();
+        $THIS.find('.ctrl-left').addClass('active');
+        $THIS.find('.ctrl-right').addClass('active');
       }
+      $THIS.find('.ctrl-count').html(index+1 + ' of ' + DATA.items.length);
     },
 
     // next!
@@ -313,6 +389,7 @@
       $.error('Method '+method+' does not exist on jQuery.slideMapper');
     }
     else {
+      var ret = null;
 
       // call for each element
       for (var i=0; i<this.length; i++) {
@@ -324,7 +401,7 @@
         // call init if no method given
         if (methods[method]) {
           if (!DATA) $.error('Method '+method+' called on uninitialized element');
-          else methods[method].apply(this[i], Array.prototype.slice.call(arguments, 1));
+          else ret = methods[method].apply(this[i], Array.prototype.slice.call(arguments, 1));
         }
         else {
           methods.init.apply(this[i], arguments);
@@ -333,7 +410,7 @@
         // save data changes
         $THIS.data('slideMapper', DATA);
       }
-      return this;
+      return (ret === null ? this : ret);
     }
   };
 

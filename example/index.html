@@ -10,12 +10,94 @@
     <!-- styles -->
     <link href="externals/leaflet/leaflet.css" rel="stylesheet">
     <link href="../slidemapper.css" rel="stylesheet">
+    <style type="text/css">
+      .center { width:800px; margin:0 auto; }
+      #options { margin-bottom: 30px; }
+      #options label { display: inline-block; width: 130px; clear: both; }
+      #options .column { display: inline-block; width: 390px; vertical-align: top; }
+      #options .span1 { width: 80px; }
+      #options .span2 { width: 170px; }
+    </style>
   </head>
 
   <body>
 
+    <!-- options pickers -->
+    <div id="options" class="center">
+      <h1>Slide Mapper Demo</h1>
+
+      <div class="column">
+        <label>Map Type:</label>
+        <select id="mapType">
+          <option value="cloudmade">Cloudmade (NEEDS API KEY)</option>
+          <option value="stamen-toner">Stamen Toner</option>
+          <option value="stamen-terrain">Stamen Terrain</option>
+          <option value="stamen-watercolor">Stamen Watercolor</option>
+          <option value="mapquest">Mapquest</option>
+          <option value="mapquest-aerial">Mapquest Aerial</option>
+        </select>
+        <br/>
+        <label>API Key:</label>
+        <input type="text" placeholder="req'd for cloudmade" id="apiKey" class="span2" />
+        <br/>
+        <label>Center:</label>
+        <input type="text" id="center1" class="span1" />
+        <input type="text" id="center2" class="span1" />
+        <br/>
+        <label>Zoom:</label>
+        <input type="number" id="zoom" class="span1" />
+        <br/>
+        <label>Min Zoom:</label>
+        <input type="number" id="minZoom" class="span1" />
+        <br/>
+        <label>Max Zoom:</label>
+        <input type="number" id="maxZoom" class="span1" />
+        <br/>
+        <label>Keyboard Events:</label>
+        <input type="checkbox" id="keyEvents" />
+        <br/>
+        <label>Explore Mode:</label>
+        <input type="checkbox" id="exploreMode" />
+        <br/>
+      </div>
+
+      <div class="column">
+        <label>Close Popups:</label>
+        <input type="checkbox" id="closePopupOnClick" />
+        <br/>
+        <label>Map Position:</label>
+        <select id="mapPosition">
+          <option value="bottom">Bottom</option>
+          <option value="top">Top</option>
+        </select>
+        <br/>
+        <label>Map Height:</label>
+        <input type="number" id="mapHeight" class="span1" />
+        <br/>
+        <label>Slide Height:</label>
+        <input type="number" id="slideHeight" class="span1" />
+        <br/>
+        <label>Auto Slide Height:</label>
+        <input type="checkbox" id="autoHeight" />
+        <br/>
+        <label>Animation Speed:</label>
+        <input type="number" id="animateSpeed" class="span1" />
+        <br/>
+        <label>Control Type:</label>
+        <select id="controlType">
+          <option value="sides">Sides</option>
+          <option value="top">Top</option>
+        </select>
+        <br/>
+      </div>
+
+
+      <br/><br/><button id="generate">Generate!</button>
+      <hr>
+    </div>
+
     <!-- mapper container -->
-    <div id="mapper" style="width: 800px"></div>
+    <div id="mapper" class="center"></div>
 
     <!-- javascripts -->
     <script src="externals/jquery/jquery-1.7.2.min.js"></script>
@@ -28,17 +110,57 @@
 
     <!-- initialize slide mapper -->
     <script type="text/javascript">
-        var mapper = $('#mapper').slideMapper({
-            slides: [EXAMPLEDATA[0], EXAMPLEDATA[1]],
-            zoom: 3
-        });
+        $mapper = $('#mapper').slideMapper();
+
+        // helper to add sample data
+        // TODO: fix options setter to preserve slides
+        function testData() {
+          $mapper.slideMapper('add', EXAMPLEDATA[2][0], EXAMPLEDATA[2][1], EXAMPLEDATA[2][2]);
+          $mapper.slideMapper('add', EXAMPLEDATA[3][0], EXAMPLEDATA[3][1], EXAMPLEDATA[3][2]);
+          $mapper.slideMapper('add', EXAMPLEDATA[4][0], EXAMPLEDATA[4][1], EXAMPLEDATA[4][2]);
+        }
+        testData();
+
+        // set options inputs
+        var opts = $mapper.slideMapper('options');
+        for (var i in opts) {
+          if (i == 'center') {
+            document.getElementById('center1').value = opts[i].lat;
+            document.getElementById('center2').value = opts[i].lng;
+          }
+          else if (l = document.getElementById(i)) {
+            var key = (opts[i] === true || opts[i] === false) ? 'checked' : 'value';
+            l[key] = opts[i];
+          }
+        }
+
+        // generate with new options
+        document.getElementById('generate').onclick = function() {
+          for (var i in opts) {
+            if (i == 'center') {
+              opts[i] = [document.getElementById('center1').value, document.getElementById('center2').value];
+            }
+            else if (l = document.getElementById(i)) {
+              var key = (opts[i] === true || opts[i] === false) ? 'checked' : 'value';
+              opts[i] = l[key];
+            }
+          }
+          $mapper.slideMapper('options', opts);
+          testData();
+        }
+
+        // var mapper = $('#mapper').slideMapper({
+        //     slides: [EXAMPLEDATA[0], EXAMPLEDATA[1]],
+        //     zoom: 3
+        // });
 
         // sample data
-        mapper.slideMapper('add', EXAMPLEDATA[2][0], EXAMPLEDATA[2][1], EXAMPLEDATA[2][2]);
-        mapper.slideMapper('add', EXAMPLEDATA[3][0], EXAMPLEDATA[3][1], EXAMPLEDATA[3][2]);
-        mapper.slideMapper('add', EXAMPLEDATA[4][0], EXAMPLEDATA[4][1], EXAMPLEDATA[4][2]);
-        mapper.slideMapper('add', EXAMPLEDATA[5][0], EXAMPLEDATA[5][1], EXAMPLEDATA[5][2]);
-        mapper.slideMapper('add', [EXAMPLEDATA[6], EXAMPLEDATA[7], EXAMPLEDATA[8], EXAMPLEDATA[9]]);
+
+        // $mapper.slideMapper('add', EXAMPLEDATA[2][0], EXAMPLEDATA[2][1], EXAMPLEDATA[2][2]);
+        // $mapper.slideMapper('add', EXAMPLEDATA[3][0], EXAMPLEDATA[3][1], EXAMPLEDATA[3][2]);
+        // $mapper.slideMapper('add', EXAMPLEDATA[4][0], EXAMPLEDATA[4][1], EXAMPLEDATA[4][2]);
+        // mapper.slideMapper('add', EXAMPLEDATA[5][0], EXAMPLEDATA[5][1], EXAMPLEDATA[5][2]);
+        // mapper.slideMapper('add', [EXAMPLEDATA[6], EXAMPLEDATA[7], EXAMPLEDATA[8], EXAMPLEDATA[9]]);
     </script>
 
   </body>
