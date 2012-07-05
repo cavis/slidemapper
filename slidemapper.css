@@ -22,7 +22,6 @@
 .smapp-show {
   width: 100%;
   position: relative;
-  line-height: 1;
   overflow: hidden;
 }
 .smapp-slides-ct {}
