@@ -270,7 +270,6 @@
       else {
         DATA.options = $.extend({}, DATA.options, passedOpts);
         $THIS.empty();
-        $(document).unbind('keydown', _onKeyPress);
         $THIS.append(_makeHTML(DATA.options));
         showEl = $('.smapp-show', $THIS)[0];
         mapEl  = $('.smapp-map',  $THIS)[0];
@@ -279,7 +278,7 @@
         $(showEl)
           .on('click', '.ctrl-left', function() {$THIS.slideMapper('prev');})
           .on('click', '.ctrl-right', function() {$THIS.slideMapper('next');});
-        if (DATA.options.keyEvents) $(document).keydown(_onKeyPress);
+        methods.keyEvents(DATA.options.keyEvents);
 
         // initialize the map
         DATA.options.center = new L.LatLng(DATA.options.center[0], DATA.options.center[1]);
@@ -295,6 +294,32 @@
         DATA.index = null;
         methods.add(DATA.options.slides);
       }
+    },
+
+    // set key events on or off
+    keyEvents: function(turnOn) {
+      $(document).unbind('keydown', _onKeyPress);
+      if (turnOn) {
+        $(document).keydown(_onKeyPress)
+      }
+    },
+
+    // set map events on or off
+    mapEvents: function(turnOn) {
+      var props = ['dragging', 'touchZoom', 'doubleClickZoom', 'scrollWheelZoom', 'boxZoom'];
+      var fn = turnOn ? 'enable' : 'disable';
+      for (var i=0; i<props.length; i++) {
+        var p = props[i];
+        if (DATA.map[p] && typeof(DATA.map[p][fn]) === 'function') {
+          DATA.map[p][fn]();
+        }
+      }
+    },
+
+    // prevent slide from changing
+    freeze: function(makeFrozen) {
+      DATA.frozen = makeFrozen;
+      makeFrozen ? methods.keyEvents(false) : methods.keyEvents(true);
     },
 
     // add a datapoint/marker to the map
@@ -351,6 +376,7 @@
 
     // move to a different marker
     move: function(index, panTo) {
+      if (DATA.frozen) return;
       if (index === null || index >= DATA.items.length || index < 0 || index == DATA.index) return;
 
       // slide out the old, in the new preview
