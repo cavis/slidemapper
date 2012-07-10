@@ -50,9 +50,6 @@
     // enable key events (left-right arrow keys)
     keyEvents: true,
 
-    // experimental shortest-path arrow key controls
-    exploreMode: false,
-
     // allow popups to close on the map
     closePopupOnClick: false,
 
@@ -84,32 +81,32 @@
     $el.animate({'margin-left': 0}, DATA.options.animateSpeed, 'swing', function() { $el.removeAttr('style'); });
     _autoHeight($el, true);
   }
+  function _refreshControls() {
+    var left = $THIS.find('.ctrl-left'),
+        right = $THIS.find('.ctrl-right'),
+        count = $THIS.find('.ctrl-count');
+    (DATA.index > 0) ? left.addClass('active') : left.removeClass('active');
+    (DATA.index < DATA.items.length-1) ? right.addClass('active') : right.removeClass('active');
+    count.html((DATA.index === null ? 0 : DATA.index+1) + ' of ' + DATA.items.length);
+  }
   function _autoHeight($el, animate) {
     if (DATA.options.autoHeight) {
-      var $slide = $THIS.find('.smapp-show');
-      if (!DATA.autoHeight) DATA.autoHeight = $slide.height();
-      var inner = $el.find('.slide-inner').height(), outer = $slide.height();
+      var $show = $THIS.find('.smapp-show');
+      if (!DATA.autoHeight) DATA.autoHeight = $show.height();
+      var inner = $el.find('.slide-inner').height(), outer = $show.height();
       if (inner > outer) {
-        animate ? $slide.animate({'height': inner}, DATA.options.animateSpeed) : $slide.height(inner);
+        animate ? $show.animate({'height': inner}, DATA.options.animateSpeed) : $show.height(inner);
       }
       else if (inner < outer) {
         var newH = Math.max(inner, DATA.autoHeight);
-        animate ? $slide.animate({'height': newH}, DATA.options.animateSpeed) : $slide.height(newH);
+        animate ? $show.animate({'height': newH}, DATA.options.animateSpeed) : $show.height(newH);
       }
     }
   }
   function _onKeyPress(e) {
     if (DATA.index !== null) {
-      if (compass = DATA.items[DATA.index].compass) {
-        if (e.keyCode == 37 && compass.w) $THIS.slideMapper('move', compass.w.i);
-        if (e.keyCode == 38 && compass.n) $THIS.slideMapper('move', compass.n.i);
-        if (e.keyCode == 39 && compass.e) $THIS.slideMapper('move', compass.e.i);
-        if (e.keyCode == 40 && compass.s) $THIS.slideMapper('move', compass.s.i);
-      }
-      else {
-        if (e.keyCode == 37) $THIS.slideMapper('prev');
-        if (e.keyCode == 39) $THIS.slideMapper('next');
-      }
+      if (e.keyCode == 37) $THIS.slideMapper('prev');
+      if (e.keyCode == 39) $THIS.slideMapper('next');
     }
   }
   function _setTiles(tileType) {
@@ -207,47 +204,6 @@
     // determine the center
     DATA.map.setView(item.center, item.zoom || DATA.map.getZoom(), panTo ? false : true);
   }
-  function _getCompass(newMarker) {
-    var newLatLng = newMarker.getLatLng();
-    var newCompass = {};
-
-    // calculate x/y distance to other markers
-    for (var i=0; i<DATA.items.length; i++) {
-      if (i == newMarker.index) continue;
-
-      // get their data
-      var compass = DATA.items[i].compass;
-      var latlng = DATA.items[i].marker.getLatLng();
-      var isabove = (latlng.lat > newLatLng.lat);
-      var isleft  = (latlng.lng < newLatLng.lng);
-
-      // determine which axis to bind to
-      var latonly = new L.LatLng(latlng.lat, newLatLng.lng);
-      var lngonly = new L.LatLng(newLatLng.lat, latlng.lng);
-      var latdist = newLatLng.distanceTo(latonly);
-      var lngdist = newLatLng.distanceTo(lngonly);
-
-      // helper to pick the nearest item
-      var pickNearest = function(dir, dist) {
-        if (!newCompass[dir] || dist < newCompass[dir].d) {
-          newCompass[dir] = {i:i, d:dist};
-        }
-        var opp = (dir == 'n' ? 's' : (dir == 's' ? 'n' : (dir == 'e' ? 'w' : 'e')));
-        if (!compass[opp] || dist < compass[opp].d) {
-          compass[opp] = {i:newMarker.index, d:dist};
-        }
-      }
-
-      // setup the new compass (and update the other one too)
-      if (latdist > lngdist) {
-        (isabove) ? pickNearest('n', latdist) : pickNearest('s', latdist);
-      }
-      else if (lngdist >= latdist) {
-        (isleft) ? pickNearest('w', latdist) : pickNearest('e', latdist);
-      }
-    }
-    return newCompass;
-  }
 
 
   // public methods
@@ -322,13 +278,27 @@
       makeFrozen ? methods.keyEvents(false) : methods.keyEvents(true);
     },
 
-    // add a datapoint/marker to the map
+    // get the slide at an index (or current index if null)
+    get: function(index) {
+      index = (index === undefined || index === null) ? DATA.index : index;
+      return (DATA.items[index] === undefined) ? false : DATA.items[index];
+    },
+
+    // append a slide (or slides) to the end of the show
     add: function(cfg) {
-      if (cfg instanceof Array) {
-        for (var i=0; i<cfg.length; i++) methods.add.call(this, cfg[i]);
-        return;
+      var idx = (DATA.items && DATA.items.length) ? DATA.items.length : 0;
+      methods.insert(idx, cfg);
+    },
+
+    // insert a slide (or slides) into the show
+    insert: function(index, cfg) {
+      if ($.isArray(cfg)) {
+        return $.each(cfg, function(i, c) { methods.insert.call(this, index+i, c); });
       }
-      var item = {config: cfg};
+      if (!$.isNumeric(index) || index < 0 || index > DATA.items.length) {
+        $.error('Invalid index "'+index+'" provided to insert');
+      }
+      var item = {index: index, config: cfg};
 
       // add marker to map
       if (cfg.marker) {
@@ -336,7 +306,7 @@
         item.marker = new L.Marker(latlng);
         if (cfg.popup) item.marker.bindPopup(cfg.popup);
 
-        item.marker.index = DATA.items.length;
+        item.marker.index = index;
         item.marker.on('click', function(e) {
           methods.move(e.target.index, true);
         });
@@ -344,13 +314,12 @@
       }
 
       // render to slide
-      var slidesCt = $THIS.find('.smapp-slides-ct');
-      var inner = '<div class="slide-inner">'+(cfg.html || '')+'</div>';
-      item.slide = $('<div class="slide">'+inner+'</div>').appendTo(slidesCt);
-
-      // calculate arrow compass for the marker
-      if (DATA.options.exploreMode && data.options.keyEvents && item.marker) {
-        item.compass = _getCompass(item.marker);
+      var html = '<div class="slide"><div class="slide-inner">'+(cfg.html || '')+'</div></div>';
+      if (index == DATA.items.length) {
+        item.$slide = $(html).appendTo($THIS.find('.smapp-slides-ct'));
+      }
+      else {
+        item.$slide = $(html).insertBefore(DATA.items[index].$slide);
       }
 
       // figure out center and zoom (optional)
@@ -360,47 +329,93 @@
         item.center = new L.LatLng(cfg.center[0], cfg.center[1]);
       }
 
-      // store in items array, then refresh or show the current popup
-      DATA.items.push(item);
+      // splice into data items
+      DATA.items.splice(index, 0, item);
+      for (var i=index+1; i<DATA.items.length; i++) {
+        DATA.items[i].index++;
+        if (DATA.items[i].marker) DATA.items[i].marker.index++;
+      }
+
+      // show slide and refresh controls
       if (DATA.items.length == 1) {
-        DATA.index = 0;
-        DATA.items[0].slide.addClass('active');
-        _autoHeight(DATA.items[0].slide, false);
-        _showPopup(DATA.items[DATA.index]);
+        methods.move(0, false); //initial
       }
-      if (DATA.items.length == 2) {
-        $THIS.find('.ctrl-right').addClass('active');
+      else if (DATA.index === index) {
+        DATA.index++; //follow the active slide
       }
-      $THIS.find('.ctrl-count').html(DATA.index+1 + ' of ' + DATA.items.length);
+      _refreshControls();
+    },
+
+    // move the current slide to a new index
+    shuffle: function(oldIndex, newIndex) {
+
+    },
+
+    // remove a single slide/marker
+    remove: function(index) {
+      var item = methods.get(index);
+      if (!item) {
+        $.error('Invalid index "'+index+'" provided to remove');
+      }
+      if (DATA.items.length == 1) {
+        return methods.removeAll(); //just nuke it
+      }
+
+      // remove from map, slide, and items
+      if (item.marker) {
+        DATA.markergroup.removeLayer(item.marker);
+      }
+      item.$slide.remove();
+      DATA.items.splice(item.index, 1);
+      for (var i=item.index; i<DATA.items.length; i++) {
+        DATA.items[i].index--;
+        if (DATA.items[i].marker) DATA.items[i].marker.index--;
+      }
+
+      // show slide and refresh controls
+      if (DATA.index === item.index) {
+        DATA.index = null; //force trigger move
+        methods.move(Math.min(item.index, DATA.items.length-1), true);
+      }
+      _refreshControls();
+    },
+
+    // fast remove all slides/markers
+    removeAll: function() {
+      DATA.map.removeLayer(DATA.markergroup);
+      $THIS.find('.smapp-slides-ct').empty();
+
+      // re-init the blank map
+      DATA.markergroup = new L.LayerGroup();
+      DATA.map.addLayer(DATA.markergroup);
+      DATA.items = [];
+      DATA.index = null;
+      _refreshControls();
+
+      // re-center the blank map
+      DATA.map.setView(DATA.options.center, DATA.options.zoom);
     },
 
     // move to a different marker
-    move: function(index, panTo) {
+    move: function(index, animate) {
       if (DATA.frozen) return;
       if (index === null || index >= DATA.items.length || index < 0 || index == DATA.index) return;
 
       // slide out the old, in the new preview
-      _slideOut(DATA.items[DATA.index].slide, (index > DATA.index));
-      _slideIn(DATA.items[index].slide, (index > DATA.index));
-
-      // open new popup and update stored index
-      _showPopup(DATA.items[index], panTo);
-      DATA.index = index;
-
-      // update controls
-      if (index == 0) {
-        $THIS.find('.ctrl-left').removeClass('active');
-        $THIS.find('.ctrl-right').addClass('active');
-      }
-      else if (index == DATA.items.length - 1) {
-        $THIS.find('.ctrl-left').addClass('active');
-        $THIS.find('.ctrl-right').removeClass('active');
+      if (animate) {
+        if (DATA.index !== null) _slideOut(DATA.items[DATA.index].$slide, (index > DATA.index));
+        _slideIn(DATA.items[index].$slide, (index > DATA.index));
       }
       else {
-        $THIS.find('.ctrl-left').addClass('active');
-        $THIS.find('.ctrl-right').addClass('active');
+        if (DATA.index !== null) DATA.items[DATA.index].$slide.removeClass('active');
+        DATA.items[index].$slide.addClass('active');
+        _autoHeight(DATA.items[0].slide, false);
       }
-      $THIS.find('.ctrl-count').html(index+1 + ' of ' + DATA.items.length);
+
+      // open new popup and update stored index
+      _showPopup(DATA.items[index], animate);
+      DATA.index = index;
+      _refreshControls();
     },
 
     // next!
