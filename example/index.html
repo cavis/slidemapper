@@ -97,6 +97,7 @@
       <button id="insertrand">Insert</button>
       <button id="removecurr">Remove</button>
       <button id="removeall">Remove All</button>
+      <button id="shuffle">Random shuffle</button>
       <hr>
     </div>
 
@@ -114,7 +115,7 @@
 
     <!-- initialize slide mapper -->
     <script type="text/javascript">
-        $mapper = $('#mapper').slideMapper();
+        $mapper = $('#mapper').slideMapper({controlType: 'top'});
 
         // helper to generate random data
         function randomData() {
@@ -123,6 +124,11 @@
             html: '<div style="margin:60px;text-align:center"><h1>Random Slide '+randSlideIdx+'</h1></div>',
             popup: 'Random Slide '+(randSlideIdx++)
           };
+        }
+
+        // generate random integers
+        function randomInt(min, max) {
+          return Math.floor(Math.random() * (max - min + 1)) + min;
         }
 
         // helper to add sample data
@@ -175,6 +181,13 @@
         }
         document.getElementById('removeall').onclick = function() {
           $mapper.slideMapper('removeAll');
+        }
+        document.getElementById('shuffle').onclick = function() {
+          var count = $mapper.slideMapper('count');
+          var from = $mapper.slideMapper('get').index;
+          var to = randomInt(0, count-1);
+          console.log('shuffle from ', from, ' to ', to);
+          $mapper.slideMapper('shuffle', to);
         }
     </script>
 

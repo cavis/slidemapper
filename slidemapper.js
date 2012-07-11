@@ -278,6 +278,11 @@
       makeFrozen ? methods.keyEvents(false) : methods.keyEvents(true);
     },
 
+    // get the number of items in the slideshow
+    count: function() {
+      return DATA.items.length;
+    },
+
     // get the slide at an index (or current index if null)
     get: function(index) {
       index = (index === undefined || index === null) ? DATA.index : index;
@@ -287,13 +292,15 @@
     // append a slide (or slides) to the end of the show
     add: function(cfg) {
       var idx = (DATA.items && DATA.items.length) ? DATA.items.length : 0;
-      methods.insert(idx, cfg);
+      return methods.insert(idx, cfg);
     },
 
     // insert a slide (or slides) into the show
     insert: function(index, cfg) {
       if ($.isArray(cfg)) {
-        return $.each(cfg, function(i, c) { methods.insert.call(this, index+i, c); });
+        var ins = [];
+        $.each(cfg, function(i, c) { ins.push(methods.insert.call(this, index+i, c)); });
+        return ins;
       }
       if (!$.isNumeric(index) || index < 0 || index > DATA.items.length) {
         $.error('Invalid index "'+index+'" provided to insert');
@@ -344,11 +351,55 @@
         DATA.index++; //follow the active slide
       }
       _refreshControls();
+      return item;
     },
 
-    // move the current slide to a new index
-    shuffle: function(oldIndex, newIndex) {
+    // move a slide to a new position
+    shuffle: function(index1, index2) {
+      var fidx = (index2 === undefined || index2 === null) ? DATA.index : index1;
+      var item = methods.get(fidx);
+      if (!item) {
+        $.error('Invalid from index "'+fidx+'" provided to remove');
+      }
 
+      var tidx = (index2 === undefined || index2 === null) ? index1 : index2;
+      if (tidx == 'first') tidx = 0;
+      if (tidx == 'last') tidx = DATA.items.length-1;
+      if (!$.isNumeric(tidx) || tidx < 0 || tidx > DATA.items.length-1) {
+        $.error('Invalid to index "'+tidx+'" provided to insert');
+      }
+      if (fidx == tidx) return; //nothing to do
+
+      // splice out of items
+      DATA.items.splice(fidx, 1);
+      for (var i=fidx; i<DATA.items.length; i++) {
+        DATA.items[i].index--;
+        if (DATA.items[i].marker) DATA.items[i].marker.index--;
+      }
+
+      // move the slide
+      if (tidx == DATA.items.length) {
+        item.$slide.appendTo($THIS.find('.smapp-slides-ct'));
+      }
+      else {
+        item.$slide.insertBefore(DATA.items[tidx].$slide);
+      }
+
+      // splice back into items and update index
+      item.index = tidx;
+      if (item.marker) item.marker.index = tidx;
+      DATA.items.splice(tidx, 0, item);
+      for (var i=tidx+1; i<DATA.items.length; i++) {
+        DATA.items[i].index++;
+        if (DATA.items[i].marker) DATA.items[i].marker.index++;
+      }
+
+      // follow me
+      if (DATA.index == fidx) {
+        DATA.index = tidx;
+      }
+      _refreshControls();
+      return item;
     },
 
     // remove a single slide/marker
@@ -374,8 +425,10 @@
 
       // show slide and refresh controls
       if (DATA.index === item.index) {
-        DATA.index = null; //force trigger move
-        methods.move(Math.min(item.index, DATA.items.length-1), true);
+        var flipTo = Math.min(item.index, DATA.items.length-1);
+        _slideIn(DATA.items[flipTo].$slide, (flipTo >= DATA.index));
+        _showPopup(DATA.items[flipTo], true);
+        DATA.index = flipTo;
       }
       _refreshControls();
     },
@@ -399,7 +452,7 @@
     // move to a different marker
     move: function(index, animate) {
       if (DATA.frozen) return;
-      if (index === null || index >= DATA.items.length || index < 0 || index == DATA.index) return;
+      if (!methods.get(index)) return;
 
       // slide out the old, in the new preview
       if (animate) {
