@@ -462,7 +462,7 @@
       else {
         if (DATA.index !== null) DATA.items[DATA.index].$slide.removeClass('active');
         DATA.items[index].$slide.addClass('active');
-        _autoHeight(DATA.items[0].slide, false);
+        _autoHeight(DATA.items[0].$slide, false);
       }
 
       // open new popup and update stored index
