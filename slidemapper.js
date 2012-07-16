@@ -453,6 +453,7 @@
     move: function(index, animate) {
       if (DATA.frozen) return;
       if (!methods.get(index)) return;
+      if ($THIS.triggerHandler('move', [methods.get(index), index]) === false) return;
 
       // slide out the old, in the new preview
       if (animate) {
