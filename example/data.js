@@ -77,6 +77,58 @@ EXAMPLEDATA = [
     popup: 'non-centered marker'
   },
 
+  // clustered markers
+  {
+    marker: [40.072208, -105.508332],
+    html: '<div style="margin:0 40px; padding:20px 10px">' +
+            '<div>' +
+              '<h1>Cluster marker 1</h1>' +
+              '<p>Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Nulla vitae elit libero, a pharetra augue. Integer posuere erat a ante venenatis <a href="#">dapibus posuere</a> velit aliquet.</p><p>Cras justo odio, dapibus ac facilisis in, egestas eget quam. Sed posuere consectetur est at lobortis. Aenean lacinia bibendum nulla sed consectetur. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Aenean eu leo quam. Pellentesque ornare sem lacinia quam venenatis vestibulum.</p>' +
+            '</div>' +
+          '</div>',
+    popup: 'cluster marker #1'
+  },
+  {
+    marker: [39.961376, -105.510831],
+    html: '<div style="margin:0 40px; padding:20px 10px">' +
+            '<div>' +
+              '<h1>Cluster marker 2</h1>' +
+              '<p>Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Nulla vitae elit libero, a pharetra augue. Integer posuere erat a ante venenatis <a href="#">dapibus posuere</a> velit aliquet.</p><p>Cras justo odio, dapibus ac facilisis in, egestas eget quam. Sed posuere consectetur est at lobortis. Aenean lacinia bibendum nulla sed consectetur. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Aenean eu leo quam. Pellentesque ornare sem lacinia quam venenatis vestibulum.</p>' +
+            '</div>' +
+          '</div>',
+    popup: 'cluster marker #2'
+  },
+  {
+    marker: [39.737567, -104.984718],
+    html: '<div style="margin:0 40px; padding:20px 10px">' +
+            '<div>' +
+              '<h1>Cluster marker 3</h1>' +
+              '<p>Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Nulla vitae elit libero, a pharetra augue. Integer posuere erat a ante venenatis <a href="#">dapibus posuere</a> velit aliquet.</p><p>Cras justo odio, dapibus ac facilisis in, egestas eget quam. Sed posuere consectetur est at lobortis. Aenean lacinia bibendum nulla sed consectetur. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Aenean eu leo quam. Pellentesque ornare sem lacinia quam venenatis vestibulum.</p>' +
+            '</div>' +
+          '</div>',
+    popup: 'cluster marker #3'
+  },
+  {
+    marker: [37.811941, -107.664506],
+    html: '<div style="margin:0 40px; padding:20px 10px">' +
+            '<div>' +
+              '<h1>Cluster marker 4</h1>' +
+              '<p>Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Nulla vitae elit libero, a pharetra augue. Integer posuere erat a ante venenatis <a href="#">dapibus posuere</a> velit aliquet.</p><p>Cras justo odio, dapibus ac facilisis in, egestas eget quam. Sed posuere consectetur est at lobortis. Aenean lacinia bibendum nulla sed consectetur. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Aenean eu leo quam. Pellentesque ornare sem lacinia quam venenatis vestibulum.</p>' +
+            '</div>' +
+          '</div>',
+    popup: 'cluster marker #4'
+  },
+  {
+    marker: [40.377206, -105.521665],
+    html: '<div style="margin:0 40px; padding:20px 10px">' +
+            '<div>' +
+              '<h1>Cluster marker 5</h1>' +
+              '<p>Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Nulla vitae elit libero, a pharetra augue. Integer posuere erat a ante venenatis <a href="#">dapibus posuere</a> velit aliquet.</p><p>Cras justo odio, dapibus ac facilisis in, egestas eget quam. Sed posuere consectetur est at lobortis. Aenean lacinia bibendum nulla sed consectetur. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Aenean eu leo quam. Pellentesque ornare sem lacinia quam venenatis vestibulum.</p>' +
+            '</div>' +
+          '</div>',
+    popup: 'cluster marker #5'
+  },
+
   // empty slide
   {
     html: '<div style="margin:0 40px; padding:20px 10px">' +

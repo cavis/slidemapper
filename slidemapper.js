@@ -58,6 +58,7 @@
     mapHeight: 400,
     slideHeight: 220, //if autoHeight, this serves as the min slide height
     autoHeight: false,
+    leafPile: false,
 
     // slideshow settings
     animateSpeed: 200,
@@ -117,20 +118,20 @@
 
     // set the new tile layer
     if (tileType == 'cloudmade') {
-      if (!DATA.options.apiKey) alert('apiKey required for cloudmade tiles');
+      if (!DATA.options.apiKey) $.error('apiKey required for cloudmade tiles');
       var tileOpts = {attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://cloudmade.com">CloudMade</a>'};
       DATA.tileLayer = new L.TileLayer('http://{s}.tile.cloudmade.com/'+DATA.options.apiKey+'/997/256/{z}/{x}/{y}.png', tileOpts);
     }
     else if (tileType == 'stamen-toner') {
-      if (!L.StamenTileLayer) alert('did you forget to include tile.stamen.js?');
+      if (!L.StamenTileLayer) $.error('did you forget to include tile.stamen.js?');
       DATA.tileLayer = new L.StamenTileLayer('toner');
     }
     else if (tileType == 'stamen-terrain') {
-      if (!L.StamenTileLayer) alert('did you forget to include tile.stamen.js?');
+      if (!L.StamenTileLayer) $.error('did you forget to include tile.stamen.js?');
       DATA.tileLayer = new L.StamenTileLayer('terrain');
     }
     else if (tileType == 'stamen-watercolor') {
-      if (!L.StamenTileLayer) alert('did you forget to include tile.stamen.js?');
+      if (!L.StamenTileLayer) $.error('did you forget to include tile.stamen.js?');
       DATA.tileLayer = new L.StamenTileLayer('watercolor');
     }
     else if (tileType == 'mapquest') {
@@ -148,7 +149,7 @@
       DATA.tileLayer = new L.TileLayer('http://{s}.mqcdn.com/tiles/1.0.0/sat/{z}/{x}/{y}.png', tileOpts);
     }
     else {
-      alert('invalid tile type: '+tileType);
+      $.error('invalid tile type: '+tileType);
     }
     DATA.map.addLayer(DATA.tileLayer);
   }
@@ -161,7 +162,7 @@
       map = '<div class="smapp-map bottom" '+mapStyle+'></div>';
     }
     else {
-      alert('Invalid mapPosition: '+opts.mapPosition);
+      $.error('Invalid mapPosition: '+opts.mapPosition);
     }
 
     // slideshow gets either height or min-height
@@ -183,7 +184,7 @@
       show += '</div>';
     }
     else {
-      alert('Invalid controlType: '+opts.controlType);
+      $.error('Invalid controlType: '+opts.controlType);
     }
     show += '</div>'; //end smapp-show
 
@@ -197,8 +198,13 @@
   function _showPopup(item, panTo) {
     DATA.map.closePopup();
     if (item.marker && item.config.popup) {
-      var popup = item.marker._popup.setLatLng(item.marker.getLatLng());
-      DATA.map.openPopup(popup);
+      if (item.marker._leafpile) {
+        item.marker.openPopup();
+      }
+      else {
+        var popup = item.marker._popup.setLatLng(item.marker.getLatLng());
+        DATA.map.openPopup(popup);
+      }
     }
 
     // determine the center
@@ -242,7 +248,32 @@
         _setTiles(DATA.options.mapType);
 
         // create a layer for the markers
-        DATA.markergroup = new L.LayerGroup();
+        if (DATA.options.leafPile) {
+          if (!L.Leafpile) $.error('Did you forget to include leafpile.js?');
+          var opts = DATA.options.leafPile === true ? {} : DATA.options.leafPile;
+          DATA.markergroup = new L.Leafpile(opts);
+
+          // listen to zooms
+          DATA.markergroup.on('leafpileclick', function(e) {
+            var idx = e.markers[0].index;
+            if (DATA.frozen) e.cancelZoom();
+            if ($THIS.triggerHandler('move', [methods.get(idx), idx]) === false) return;
+            DATA.map.closePopup();
+
+            // slide the first marker in
+            if (DATA.index !== null) _slideOut(DATA.items[DATA.index].$slide, (idx > DATA.index));
+            _slideIn(DATA.items[idx].$slide, (idx > DATA.index));
+            if (DATA.items[idx].config.popup) {
+              var popup = e.markers[0]._popup.setLatLng(e.markers[0].getLatLng());
+              DATA.map.openPopup(popup);
+            }
+            DATA.index = idx;
+            _refreshControls();
+          });
+        }
+        else {
+          DATA.markergroup = new L.LayerGroup();
+        }
         DATA.map.addLayer(DATA.markergroup);
 
         // setup initial items
@@ -315,7 +346,13 @@
 
         item.marker.index = index;
         item.marker.on('click', function(e) {
-          methods.move(e.target.index, true);
+          var idx = e.target.index;
+          if (!DATA.frozen && $THIS.triggerHandler('move', [methods.get(idx), idx]) !== false) {
+            if (DATA.index !== null) _slideOut(DATA.items[DATA.index].$slide, (idx > DATA.index));
+            _slideIn(DATA.items[idx].$slide, (idx > DATA.index));
+            DATA.index = idx;
+            _refreshControls();
+          }
         });
         DATA.markergroup.addLayer(item.marker);
       }

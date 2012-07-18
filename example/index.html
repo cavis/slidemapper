@@ -61,6 +61,9 @@
         <label>Keyboard Events:</label>
         <input type="checkbox" id="keyEvents" />
         <br/>
+        <label>Leafpile Clustering:</label>
+        <input type="checkbox" id="leafPile" />
+        <br/>
       </div>
 
       <div class="column">
@@ -110,7 +113,8 @@
 
     <!-- javascripts -->
     <script src="externals/jquery/jquery-1.7.2.min.js"></script>
-    <script src="externals/leaflet/leaflet-src.js"></script>
+    <script src="externals/leaflet/leaflet.js"></script>
+    <script src="externals/leafpile/leafpile.js"></script>
     <script src="http://maps.stamen.com/js/tile.stamen.js"></script>
     <script src="../slidemapper.js"></script>
 
@@ -119,7 +123,7 @@
 
     <!-- initialize slide mapper -->
     <script type="text/javascript">
-        $mapper = $('#mapper').slideMapper({controlType: 'top'});
+        $mapper = $('#mapper').slideMapper({controlType: 'top', leafPile: true});
 
         // helper to generate random data
         function randomData() {
