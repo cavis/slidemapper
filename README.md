@@ -54,15 +54,15 @@ Slidemapper is just a jQuery plugin, so just call the function on a selector to 
 
 Then, you can call other Slidemapper methods by passing the string method name as the first argument, like so:
 
-    $mapper.slideMapper('add', someSlideConfig);
-    $mapper.slideMapper('count');
+    $mySlideMap.slideMapper('add', someSlideConfig);
+    $mySlideMap.slideMapper('count');
     $('#slideshow-container').slideMapper('removeAll');
 
 
 Options
 ------------
 
-These options can be passed in when you initialize the slideMapper.
+These options can be passed in when you initialize the slideMapper
 
 `slides` - An optional array of slide configurations to add as soon as the slideshow is created.
 
@@ -100,13 +100,59 @@ These options can be passed in when you initialize the slideMapper.
 Methods
 ------------
 
-## TODO ##
+Manipulate the slides in the show
+
+`add`__(config)__ - add a slide to the end of the slideshow
+
+`insert`__(index, config)__ - insert a slide into the slideshow
+
+`get`__()__ - get the currently displayed slide
+
+`get`__(index)__ - get a slide at an index
+
+`count`__()__ - get the total number of slides
+
+`shuffle`__(moveCurrentToIndex)__ - move the currently displayed slide to a new index
+
+`shuffle`__(indexFrom, indexTo)__ - move a slide to a new index
+
+`remove`__()__ - remove the currently displayed slide from the slideshow
+
+`remove`__(index)__ - remove a specific slide from the slideshow
+
+`removeAll`__()__ - remove all slides from this slideshow
+
+Change the currently displayed slide
+
+`move`__(index, animate)__ - move to a slide at an index, optionally animating the transition
+
+`next`__()__ - move to the next slide
+
+`prev`__()__ - move to the previous slide
+
+Enable and disable events
+
+`keyEvents`__(turnOn)__ - enable or disable key events
+
+`mapEvents`__(turnOn)__ - enable or disable map events
+
+`freeze`__(makeFrozen)__ - freeze the show, preventing the user from changing slides or scrolling/zooming the map
 
 
 Events
 ------------
 
-## TODO ##
+`move` - fired when the slide changes
+
+    $mySlideMap = $('#slideshow-container').slideMapper();
+    $mySlideMap.on('move', function(e, slide, index) {
+        // e     - the event object
+        // slide - the slide we're moving to
+        // index - the index of the slide we're moving to
+        if (slide.index == 4) {
+            return false; // prevent the slide from changing
+        }
+    });
 
 
 Issues and Contributing
