@@ -323,6 +323,7 @@ L.LeafpileGroup = L.LayerGroup.extend({
                 }
             }
         }
+        this.fire('redraw');
     },
 
     // clear cached point
