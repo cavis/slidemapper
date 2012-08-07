@@ -186,11 +186,11 @@ L.LeafpileGroup = L.LayerGroup.extend({
     // clear all on removed from map
     onRemove: function (map) {
         this.clearLayers();
-        this._map = null;
 
         // listeners
         this._map.off('zoomstart', this._onZoomStart, this);
         this._map.off('zoomend', this._onZoomEnd, this);
+        this._map = null;
     },
 
     /* ========================================
