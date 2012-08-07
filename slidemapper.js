@@ -205,26 +205,32 @@
 
     // create a leafpile, or a normal layer
     if (DATA.options.leafPile) {
-      if (!L.Leafpile) $.error('Did you forget to include leafpile.js?');
+      if (!L.LeafpileGroup) $.error('Did you forget to include leafpile.js?');
       var opts = DATA.options.leafPile === true ? {} : DATA.options.leafPile;
-      markerLayer = new L.Leafpile(opts);
+      markerLayer = new L.LeafpileGroup(opts);
 
-      // listen to zooms
-      markerLayer.on('leafpileclick', function(e) {
-        var idx = e.markers[0].index;
-        if (DATA.frozen) e.cancelZoom();
-        if ($THIS.triggerHandler('move', [methods.get(idx), idx]) === false) return;
-        DATA.map.closePopup();
-
-        // slide the first marker in
-        if (DATA.index !== null) _slideOut(DATA.items[DATA.index].$slide, (idx > DATA.index));
-        _slideIn(DATA.items[idx].$slide, (idx > DATA.index));
-        if (DATA.items[idx].config.popup) {
-          var popup = e.markers[0]._popup.setLatLng(e.markers[0].getLatLng());
-          DATA.map.openPopup(popup);
+      // listen to zooms/redraws
+      markerLayer.on('redraw', function(e) {
+        if (DATA.index !== null && DATA.items[DATA.index].config.popup) {
+          DATA.items[DATA.index].marker.openPopup();
         }
-        DATA.index = idx;
-        _refreshControls();
+      });
+      markerLayer.on('click', function(e) {
+        // slide the first marker in
+        if (e.leafpile) {
+          var idx = e.markers[0].index;
+          if (idx != DATA.index) {
+            if (DATA.index !== null) _slideOut(DATA.items[DATA.index].$slide, (idx > DATA.index));
+            _slideIn(DATA.items[idx].$slide, (idx > DATA.index));
+            DATA.index = idx;
+            _refreshControls();
+          }
+        }
+
+        // cancel if frozen
+        if (e.zooming && DATA.frozen) {
+          e.cancelZoom();
+        }
       });
     }
     else {
