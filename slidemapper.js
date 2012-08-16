@@ -350,7 +350,7 @@
         item.marker.index = index;
         item.marker.on('click', function(e) {
           var idx = e.target.index;
-          if (!DATA.frozen && $THIS.triggerHandler('move', [methods.get(idx), idx]) !== false) {
+          if (!DATA.frozen && DATA.index != idx && $THIS.triggerHandler('move', [methods.get(idx), idx]) !== false) {
             if (DATA.index !== null) _slideOut(DATA.items[DATA.index].$slide, (idx > DATA.index));
             _slideIn(DATA.items[idx].$slide, (idx > DATA.index));
             DATA.index = idx;
