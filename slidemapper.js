@@ -343,6 +343,19 @@
 
       // add marker to map
       if (cfg.marker) {
+
+        // adds class to extend leaflet marker
+        var LeafIcon = L.Icon.extend({
+            options: {
+                shadowUrl: '',
+                iconSize:     [40, 40],
+                shadowSize:   [0, 0],
+                iconAnchor:   [22, 94],
+                shadowAnchor: [0, 0],
+                popupAnchor:  [-3, -76]
+            }
+        });
+
         var latlng = new L.LatLng(cfg.marker[0], cfg.marker[1]);
         item.marker = new L.Marker(latlng);
         if (cfg.popup) item.marker.bindPopup(cfg.popup);
