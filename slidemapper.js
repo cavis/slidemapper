@@ -361,7 +361,7 @@
         // creates instance of map icon
         if (cfg.icon) {
             var mapIcon = new LeafIcon({iconUrl: cfg.icon});
-            item.marker = L.marker(latlng, {icon: mapIcon});
+            item.marker = new L.marker(latlng, {icon: mapIcon});
         } else {
             item.marker = new L.Marker(latlng);
         }
