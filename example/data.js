@@ -1,6 +1,7 @@
 EXAMPLEDATA = [
   // intro marker
   {
+    icon: 'other.png',
     marker: [42.516846, -70.898499],
     center: [40.423, -98.7372],
     html: '<table style="margin:0 40px; padding:10px"><tr>' +
@@ -15,6 +16,7 @@ EXAMPLEDATA = [
 
   // marker with everything
   {
+    icon: 'other.png',
     marker: [42.295006, -85.622467],
     center: [42.295006, -85.622467],
     zoom: 4,
@@ -30,6 +32,7 @@ EXAMPLEDATA = [
 
   // marker without center/zoom set ... will inherit from the previous slide
   {
+    icon: 'other.png',
     marker: [47.683819, -122.301224],
     html: '<div style="margin:0 40px; padding:20px 10px">' +
             '<div>' +
@@ -43,6 +46,7 @@ EXAMPLEDATA = [
 
   // full-image slide
   {
+    icon: 'other.png',
     marker: [33.053093, -117.268547],
     zoom: 7,
     html: '<img src="http://placehold.it/1000x600&text=Full+Size+Image" style="width:100%;height:100%;margin-bottom:-3px"/>' +
@@ -52,6 +56,7 @@ EXAMPLEDATA = [
 
   // slide without a marker
   {
+    icon: 'other.png',
     center: [40.423, -98.7372],
     zoom: 7,
     html: '<div style="margin:0 40px; padding:20px 10px">' +
@@ -65,6 +70,7 @@ EXAMPLEDATA = [
 
   // non-centered marker
   {
+    icon: 'other.png',
     marker: [36.573376, -115.674667],
     center: [35.573376, -121.674667],
     zoom: 6,
@@ -79,6 +85,7 @@ EXAMPLEDATA = [
 
   // clustered markers
   {
+    icon: 'other.png',
     marker: [40.072208, -105.508332],
     html: '<div style="margin:0 40px; padding:20px 10px">' +
             '<div>' +
@@ -89,6 +96,7 @@ EXAMPLEDATA = [
     popup: 'cluster marker #1'
   },
   {
+    icon: 'other.png',
     marker: [39.961376, -105.510831],
     html: '<div style="margin:0 40px; padding:20px 10px">' +
             '<div>' +
@@ -99,6 +107,7 @@ EXAMPLEDATA = [
     popup: 'cluster marker #2'
   },
   {
+    icon: 'other.png',
     marker: [39.737567, -104.984718],
     html: '<div style="margin:0 40px; padding:20px 10px">' +
             '<div>' +
@@ -109,6 +118,7 @@ EXAMPLEDATA = [
     popup: 'cluster marker #3'
   },
   {
+    icon: 'other.png',
     marker: [37.811941, -107.664506],
     html: '<div style="margin:0 40px; padding:20px 10px">' +
             '<div>' +
@@ -119,6 +129,7 @@ EXAMPLEDATA = [
     popup: 'cluster marker #4'
   },
   {
+    icon: 'other.png',
     marker: [40.377206, -105.521665],
     html: '<div style="margin:0 40px; padding:20px 10px">' +
             '<div>' +
