@@ -357,7 +357,15 @@
         });
 
         var latlng = new L.LatLng(cfg.marker[0], cfg.marker[1]);
-        item.marker = new L.Marker(latlng);
+
+        // creates instance of map icon
+        if (cfg.icon) {
+            var mapIcon = new LeafIcon({iconUrl: cfg.icon});
+            item.marker = L.marker(latlng, {icon: mapIcon});
+        } else {
+            item.marker = new L.Marker(latlng);
+        }
+
         if (cfg.popup) item.marker.bindPopup(cfg.popup);
 
         item.marker.index = index;
