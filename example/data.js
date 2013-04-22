@@ -1,6 +1,7 @@
 EXAMPLEDATA = [
   // intro marker
   {
+    icon: 'other.png',
     marker: [42.516846, -70.898499],
     center: [40.423, -98.7372],
     html: '<table style="margin:0 40px; padding:10px"><tr>' +
