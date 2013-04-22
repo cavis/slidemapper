@@ -15,3 +15,8 @@ SlideMapper Versions
 * Updated to latest leaflet lib
 * Updated to latest leapfile lib
 * fixed bug where clicking the same marker twice triggers slide
+
+0.1.2
+------------
+
+* Ability to use a custom image icon

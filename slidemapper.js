@@ -1,5 +1,5 @@
 /* ==========================================================
- * slidemapper.js v0.1.1
+ * slidemapper.js v0.1.2
  * A jQuery plugin to create an animated slideshow tied to a Leaflet map.
  * http://github.com/cavis/slidemapper
  * ==========================================================
